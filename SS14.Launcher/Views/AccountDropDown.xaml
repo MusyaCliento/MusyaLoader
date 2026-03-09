@@ -1,0 +1,41 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:SS14.Launcher.ViewModels"
+             xmlns:v="clr-namespace:SS14.Launcher.Views"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             xmlns:loc="clr-namespace:SS14.Launcher.Localization"
+             x:Class="SS14.Launcher.Views.AccountDropDown">
+
+  <Design.DataContext>
+    <vm:AccountDropDownViewModel />
+  </Design.DataContext>
+
+  <v:DropDown HeaderContent="{Binding LoginText}" IsDropDownOpen="{Binding IsDropDownOpen, Mode=TwoWay}" Classes="OpenRight">
+    <Panel>
+      <v:AngleBox Fill="{DynamicResource ThemeBackgroundBrush}" SideStyle="OpenRight" />
+      <StackPanel Orientation="Vertical">
+        <StackPanel Orientation="Vertical" IsVisible="{Binding AccountControlsVisible}">
+          <Button Content="{Binding LogoutText}" Command="{Binding LogoutPressed}" Margin="4" />
+          <Button Content="{loc:Loc account-drop-down-add-account}" IsVisible="{Binding EnableMultiAccounts}" Command="{Binding AddAccountPressed}" Margin="4" />
+        </StackPanel>
+        <Button Content="{loc:Loc account-drop-down-guest-account}" Command="{Binding LoginAsGuestCommand}" Margin="4" IsVisible="{Binding IsNotGuest}" />
+        <StackPanel Orientation="Vertical" IsVisible="{Binding AccountSwitchVisible}">
+          <TextBlock Text="{Binding AccountSwitchText}" Margin="4" />
+
+          <ItemsControl Name="Items" ItemsSource="{Binding Accounts}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="vm:AvailableAccountViewModel">
+                <Button Content="{Binding StatusText}" Margin="4"
+                        Command="{Binding #Items.DataContext.AccountButtonPressed}"
+                        CommandParameter="{Binding Account}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </StackPanel>
+    </Panel>
+  </v:DropDown>
+</UserControl>
+

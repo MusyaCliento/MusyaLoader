@@ -1,0 +1,61 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
+        xmlns:views="clr-namespace:SS14.Launcher.Views">
+
+  <Style Selector="views|DropDown">
+    <Setter Property="Background" Value="{DynamicResource ThemeControlMidBrush}" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Panel>
+          <views:AngleBox Fill="{TemplateBinding Background}"/>
+
+          <Panel Margin="14 0">
+            <Grid Margin="0, 2" ColumnDefinitions="*,Auto">
+              <ContentPresenter Content="{TemplateBinding HeaderContent}"
+                                ContentTemplate="{TemplateBinding HeaderContentTemplate}" />
+              <Path Grid.Column="1" Fill="{DynamicResource ThemeForegroundBrush}"
+                    Width="8"
+                    Height="4"
+                    Stretch="Uniform"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Margin="2 0 0 0"
+                    Data="F1 M 301.14,-189.041L 311.57,-189.041L 306.355,-182.942L 301.14,-189.041 Z" />
+              <Popup
+                MinWidth="{Binding Bounds.Width, RelativeSource={RelativeSource TemplatedParent}}"
+                Name="PART_Popup"
+                PlacementTarget="{TemplateBinding}"
+                Placement="{TemplateBinding Placement}"
+                IsOpen="{TemplateBinding IsDropDownOpen,Mode=TwoWay}"
+                IsLightDismissEnabled="True">
+                <ContentPresenter Content="{TemplateBinding Content}"
+                                  ContentTemplate="{TemplateBinding ContentTemplate}" />
+              </Popup>
+            </Grid>
+          </Panel>
+        </Panel>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+
+  <Style Selector="views|DropDown:pointerover">
+    <Setter Property="Background" Value="{DynamicResource ThemeButtonHoveredBrush}" />
+  </Style>
+
+  <Style Selector="views|DropDown:pressed">
+    <Setter Property="Background" Value="{DynamicResource ThemeControlHighBrush}" />
+  </Style>
+
+  <Style Selector="views|DropDown:disabled">
+    <Setter Property="Opacity" Value="{DynamicResource ThemeDisabledOpacity}" />
+  </Style>
+
+  <Style Selector="views|DropDown.OpenLeft /template/ views|AngleBox">
+    <Setter Property="SideStyle" Value="OpenLeft" />
+  </Style>
+
+  <Style Selector="views|DropDown.OpenRight /template/ views|AngleBox">
+    <Setter Property="SideStyle" Value="OpenRight" />
+  </Style>
+</Styles>

@@ -1,0 +1,22 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:loc="clr-namespace:SS14.Launcher.Localization"
+        mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="210"
+        Width="520" Height="230"
+        MinWidth="460" MinHeight="200"
+        x:Class="SS14.Launcher.Views.ProxyUnavailableDialog"
+        Icon="{DynamicResource WindowIcon}"
+        Title="{loc:Loc proxy-unavailable-title}"
+        WindowStartupLocation="CenterOwner">
+  <StackPanel Margin="14" Spacing="10">
+    <TextBlock Text="{loc:Loc proxy-unavailable-title}" Classes="NanoHeadingMedium" FontWeight="SemiBold"/>
+    <TextBlock Name="MessageText" TextWrapping="Wrap"/>
+
+    <DockPanel LastChildFill="False" Margin="0,8,0,0">
+      <Button DockPanel.Dock="Right" Content="{loc:Loc proxy-unavailable-settings}" Click="SettingsClicked"/>
+      <Button DockPanel.Dock="Right" Content="{loc:Loc proxy-unavailable-ok}" Click="OkClicked" Margin="0,0,8,0"/>
+    </DockPanel>
+  </StackPanel>
+</Window>

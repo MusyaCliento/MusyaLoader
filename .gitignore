@@ -1,0 +1,14 @@
+bin/
+obj/
+.idea/
+*.zip
+*.DotSettings.user
+.DS_Store
+cmake-build*
+publish_test
+Dependencies
+SS14.Launcher/FodyWeavers.xsd
+Marsey/Mods
+
+!PublishFiles/MusyaLoader.app/Contents/Resources/bin/
+__pycache__

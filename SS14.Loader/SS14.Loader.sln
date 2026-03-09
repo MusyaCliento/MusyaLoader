@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SS14.Loader", "SS14.Loader.csproj", "{2B2B5F63-251F-EFDF-2157-3EC21BD4F884}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2B2B5F63-251F-EFDF-2157-3EC21BD4F884}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B2B5F63-251F-EFDF-2157-3EC21BD4F884}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2B2B5F63-251F-EFDF-2157-3EC21BD4F884}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2B2B5F63-251F-EFDF-2157-3EC21BD4F884}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {47C6EB67-83E7-4C46-841C-838578754621}
+	EndGlobalSection
+EndGlobal

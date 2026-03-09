@@ -1,0 +1,90 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mainWindowTabs="clr-namespace:SS14.Launcher.ViewModels.MainWindowTabs"
+             xmlns:loc="clr-namespace:SS14.Launcher.Localization"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="520"
+             x:Class="SS14.Launcher.Views.MainWindowTabs.ProxyTabView">
+  <Design.DataContext>
+    <mainWindowTabs:ProxyTabViewModel />
+  </Design.DataContext>
+
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Margin="12" Spacing="12">
+      <TextBlock Text="{loc:Loc tab-proxy-header}" Classes="NanoHeadingMedium" FontWeight="SemiBold"/>
+
+      <StackPanel Spacing="8">
+        <CheckBox IsChecked="{Binding ProxyLauncherEnabled}" Content="{loc:Loc tab-proxy-launcher}" />
+        <CheckBox IsChecked="{Binding ProxyUpdatesEnabled}" Content="{loc:Loc tab-proxy-updates}" />
+        <CheckBox IsChecked="{Binding ProxyGuardGameLaunch}" Content="{loc:Loc tab-proxy-guard}" />
+        <StackPanel Spacing="4">
+          <CheckBox IsChecked="{Binding ProxyGameEnabled}" HorizontalAlignment="Left">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Left">
+              <TextBlock Text="{loc:Loc tab-proxy-game}" VerticalAlignment="Center" />
+              <Image Classes="info-icon"
+                     Source="avares://SS14.Launcher/Assets/marsey-icons/info.png"
+                     Width="18"
+                     Height="18"
+                     Margin="8,0,0,0"
+                     VerticalAlignment="Center"
+                     >
+                <ToolTip.Tip>
+                  <TextBlock Text="{loc:Loc tab-proxy-game-info}" MaxWidth="360" TextWrapping="Wrap"/>
+                </ToolTip.Tip>
+              </Image>
+            </StackPanel>
+          </CheckBox>
+          <CheckBox IsChecked="{Binding ProxyServiceDebug}" Content="{loc:Loc tab-proxy-service-debug}" />
+        </StackPanel>
+      </StackPanel>
+
+      <DockPanel LastChildFill="False">
+        <Button DockPanel.Dock="Left" Content="{loc:Loc tab-proxy-add}" Click="AddProfileClicked" Margin="0,0,8,0"/>
+        <Button DockPanel.Dock="Left" Content="{loc:Loc tab-proxy-edit}" Click="EditProfileClicked" IsEnabled="{Binding HasSelection}" Margin="0,0,8,0"/>
+        <Button DockPanel.Dock="Left" Content="{loc:Loc tab-proxy-remove}" Command="{Binding RemoveProfileCommand}" IsEnabled="{Binding HasSelection}" Margin="0,0,8,0"/>
+        <Button DockPanel.Dock="Left" Content="{loc:Loc tab-proxy-save}" Command="{Binding SaveProfilesCommand}" Margin="0,0,16,0"/>
+        <Button DockPanel.Dock="Right" Content="{loc:Loc tab-proxy-test-all}" Command="{Binding TestAllCommand}" IsEnabled="{Binding !IsTesting}" Margin="8,0,0,0"/>
+        <Button DockPanel.Dock="Right" Content="{loc:Loc tab-proxy-test-selected}" Command="{Binding TestSelectedCommand}" IsEnabled="{Binding HasSelection}" />
+      </DockPanel>
+
+      <Border Background="#15000000" BorderBrush="#33575B7F" BorderThickness="1" CornerRadius="8" Padding="8">
+        <StackPanel Spacing="6">
+          <Grid ColumnDefinitions="1.4*,0.8*,1.8*,0.9*,0.9*,0.9*" Margin="4,0">
+            <TextBlock Grid.Column="0" Text="{loc:Loc tab-proxy-col-name}" FontWeight="SemiBold"/>
+            <TextBlock Grid.Column="1" Text="{loc:Loc tab-proxy-col-protocol}" FontWeight="SemiBold"/>
+            <TextBlock Grid.Column="2" Text="{loc:Loc tab-proxy-col-hostport}" FontWeight="SemiBold"/>
+            <TextBlock Grid.Column="3" Text="{loc:Loc tab-proxy-col-tcp}" FontWeight="SemiBold"/>
+            <TextBlock Grid.Column="4" Text="{loc:Loc tab-proxy-col-connect}" FontWeight="SemiBold"/>
+            <TextBlock Grid.Column="5" Text="{loc:Loc tab-proxy-col-udp}" FontWeight="SemiBold"/>
+          </Grid>
+
+          <ListBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile, Mode=TwoWay}" MaxHeight="290">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <Border Background="#10000000" CornerRadius="6" Padding="6">
+                  <Grid ColumnDefinitions="1.4*,0.8*,1.8*,0.9*,0.9*,0.9*">
+                    <TextBlock Grid.Column="0" Text="{Binding Name}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <TextBlock Grid.Column="1" Text="{Binding Protocol}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <TextBlock Grid.Column="2" VerticalAlignment="Center" Margin="0,0,6,0">
+                      <Run Text="{Binding Host}" />
+                      <Run Text=":" />
+                      <Run Text="{Binding Port}" />
+                    </TextBlock>
+                    <TextBlock Grid.Column="3" Text="{Binding LastTcp}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <TextBlock Grid.Column="4" Text="{Binding LastConnect}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <TextBlock Grid.Column="5" Text="{Binding LastUdp}" VerticalAlignment="Center" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </StackPanel>
+      </Border>
+
+      <TextBlock Text="{Binding Status}" Opacity="0.8" TextWrapping="Wrap"/>
+      <TextBlock IsVisible="{Binding SelectedProfile, Converter={x:Static ObjectConverters.IsNotNull}}"
+                 Text="{Binding SelectedProfile.LastTest}" Opacity="0.6" TextWrapping="Wrap"/>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

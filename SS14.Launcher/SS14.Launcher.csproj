@@ -1,0 +1,103 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../Launcher.props" />
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <OutputType Condition="'$(Configuration)' == 'Release'">WinExe</OutputType>
+    <Nullable>enable</Nullable>
+    <!--<PublishTrimmed>true</PublishTrimmed>
+    <PublishSingleFile>true</PublishSingleFile>-->
+    <IsPackable>false</IsPackable>
+    <DefineConstants Condition="'$(FullRelease)' == 'True'">FULL_RELEASE;$(DefineConstants)</DefineConstants>
+    <DefineConstants Condition="'$(FullRelease)' != 'True'">DEVELOPMENT;$(DefineConstants)</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>CA1416</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('FreeBSD'))">
+    <UseSystemSqlite>True</UseSystemSqlite>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(UseSystemSqlite)' == 'True'">
+    <DefineConstants>$(DefineConstants);USE_SYSTEM_SQLITE</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Update="**\*.xaml.cs">
+      <DependentUpon>%(Filename)</DependentUpon>
+    </Compile>
+    <AvaloniaResource Include="**\*.xaml">
+      <SubType>Designer</SubType>
+    </AvaloniaResource>
+    <AvaloniaResource Include="Assets\**" />
+    <AvaloniaResource Update="Views\MainWindowLogin.xaml">
+      <SubType>Designer</SubType>
+    </AvaloniaResource>
+
+    <AdditionalFiles Include="**\*.xaml" SourceItemGroup="AvaloniaXaml" />
+
+    <Compile Update="Views\MainWindowTabs\ServerFilterView.xaml.cs">
+      <DependentUpon>ServerFilterView.xaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.ReactiveUI" />
+    <PackageReference Include="Avalonia.Controls.ColorPicker" />
+    <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" />
+    <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="HotAvalonia" PrivateAssets="All" />
+    <PackageReference Include="Avalonia.Themes.Simple" />
+    <PackageReference Include="CodeHollow.FeedReader" />
+    <PackageReference Include="Dapper" />
+    <PackageReference Include="DynamicData" />
+    <PackageReference Include="Microsoft.Data.Sqlite.Core" />
+    <PackageReference Include="SQLitePCLRaw.provider.sqlite3" Condition="'$(UseSystemSqlite)' == 'True'" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Condition="'$(UseSystemSqlite)' != 'True'" />
+    <PackageReference Include="Microsoft.Toolkit.Mvvm" />
+    <PackageReference Include="ReactiveUI" />
+    <PackageReference Include="ReactiveUI.Fody" />
+    <PackageReference Include="Robust.Shared.AuthLib" />
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+    <PackageReference Include="Serilog.Sinks.File" />
+    <PackageReference Include="YamlDotNet" />
+    <PackageReference Include="TerraFX.Interop.Windows" />
+    <PackageReference Include="NSec.Cryptography" />
+    <PackageReference Include="Mono.Posix.NETStandard" />
+    <PackageReference Include="SharpZstd.Interop" ExcludeAssets="native" />
+    <PackageReference Include="Robust.Natives.Zstd" />
+    <PackageReference Include="SpaceWizards.Sodium" />
+    <!-- Add libsodium to control version, SpaceWizards.Sodium's dependency is behind -->
+    <PackageReference Include="libsodium" />
+    <PackageReference Include="JetBrains.Annotations" />
+    <PackageReference Include="Microsoft.NET.ILLink.Tasks" />
+    <PackageReference Include="System.Net.Http.WinHttpHandler" />
+    <PackageReference Include="Linguini.Bundle" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="Utility\runtime.json" />
+    <EmbeddedResource Include="Utility\runtime.json">
+      <LogicalName>Utility.runtime.json</LogicalName>
+    </EmbeddedResource>
+    <None Remove="Models\Data\Migrations\*.sql" />
+    <EmbeddedResource Include="Models\Data\Migrations\*.sql" />
+    <None Remove="Models\ContentManagement\Migrations\*.sql" />
+    <EmbeddedResource Include="Models\ContentManagement\Migrations\*.sql" />
+    <None Remove="Models\OverrideAssets\Migrations\*.sql" />
+    <EmbeddedResource Include="Models\OverrideAssets\Migrations\*.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <RobustLinkRoots Include="SS14.Launcher" />
+    <RobustLinkAssemblies Include="TerraFX.Interop.Windows" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="signing_key" />
+    <Content Include="signing_key">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <!-- Marsey files -->
+  <ItemGroup>
+    <ProjectReference Include="..\Marsey\Marsey.csproj" />
+  </ItemGroup>
+  <!-- Marsey files -->
+  <Import Project="..\MSBuild\Robust.Trimming.targets" />
+</Project>

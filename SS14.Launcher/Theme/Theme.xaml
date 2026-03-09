@@ -1,0 +1,78 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+  <Style Selector="TextBlock.NanoHeading">
+    <Setter Property="Foreground" Value="{DynamicResource ThemeNanoGoldBrush}" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="FontSize" Value="30" />
+  </Style>
+
+  <Style Selector="TextBlock.NanoHeadingMedium">
+    <Setter Property="Foreground" Value="{DynamicResource ThemeNanoGoldBrush}" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="FontSize" Value="20" />
+  </Style>
+
+  <Style Selector="TextBlock.NanoHeadingSmall">
+    <Setter Property="Foreground" Value="{DynamicResource ThemeNanoGoldBrush}" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="FontSize" Value="15" />
+  </Style>
+
+  <Style Selector="TextBlock.SubText">
+    <Setter Property="Foreground" Value="{DynamicResource ThemeSubTextBrush}" />
+  </Style>
+
+  <Style Selector="Window">
+    <Setter Property="FontFamily" Value="{DynamicResource ThemeFontFamily}" />
+  </Style>
+
+  <Style Selector="Panel.GoldLineHorizontal">
+    <Setter Property="Background" Value="{DynamicResource ThemeNanoGoldBrush}" />
+    <Setter Property="MinHeight" Value="2" />
+  </Style>
+
+  <Style Selector="Expander[ExpandDirection=Down] /template/ ToggleButton#PART_toggle">
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+  </Style>
+
+  <Style Selector="Panel.ScrollViewerSep">
+    <Setter Property="Background">
+      <DynamicResource ResourceKey="ThemeStripebackEdgeBrush" />
+    </Setter>
+    <Setter Property="MinHeight" Value="1" />
+  </Style>
+
+  <!-- TabItem -->
+  <Style Selector="TabItem:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ThemeTabItemHoveredBrush}" />
+  </Style>
+  <Style Selector="TabItem:selected /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ThemeTabItemSelectedBrush}" />
+  </Style>
+  <Style Selector="TabItem:selected:focus /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ThemeTabItemSelectedBrush}" />
+  </Style>
+  <Style Selector="TabItem:selected:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ThemeTabItemSelectedBrush}" />
+  </Style>
+  <Style Selector="TabItem:selected:focus:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ThemeTabItemSelectedBrush}" />
+  </Style>
+
+  <Style Selector="Button.BigButton > TextBlock">
+    <Setter Property="FontSize" Value="20" />
+  </Style>
+
+  <Style Selector="ScrollBar">
+    <Setter Property="Margin" Value="4 0 0 0" />
+  </Style>
+
+  <Style Selector=":is(Control).MainWindowHeader">
+    <Setter Property="Margin" Value="4, 8, 0, 0" />
+  </Style>
+  <Style Selector=".WindowsTitlebarColorActive :is(Control).MainWindowHeader">
+    <Setter Property="Margin" Value="4, 0, 0, 0" />
+  </Style>
+</Styles>

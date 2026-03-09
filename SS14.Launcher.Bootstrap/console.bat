@@ -1,0 +1,3 @@
+"MusyaLoader.exe" --debug
+
+PAUSE

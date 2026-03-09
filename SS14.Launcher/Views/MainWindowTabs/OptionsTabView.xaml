@@ -1,0 +1,727 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mainWindowTabs="clr-namespace:SS14.Launcher.ViewModels.MainWindowTabs"
+             xmlns:loc="clr-namespace:SS14.Launcher.Localization"
+             xmlns:views="clr-namespace:SS14.Launcher.Views"
+             xmlns:tabViews="clr-namespace:SS14.Launcher.Views.MainWindowTabs"
+             xmlns:colorControls="clr-namespace:Avalonia.Controls;assembly=Avalonia.Controls.ColorPicker"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="SS14.Launcher.Views.MainWindowTabs.OptionsTabView"
+             Name="OptionsTab">
+  <Design.DataContext>
+    <mainWindowTabs:OptionsTabViewModel />
+  </Design.DataContext>
+
+  <UserControl.Resources>
+    <mainWindowTabs:HideLevelDescriptionConverter x:Key="HideLevelDescriptionConverter" />
+    <mainWindowTabs:ThemeDescriptionConverter x:Key="ThemeDescriptionConverter" />
+  </UserControl.Resources>
+
+  <UserControl.Styles>
+    <Style Selector="TextBox.SettingsInput">
+      <Setter Property="MinWidth" Value="260" />
+      <Setter Property="MaxWidth" Value="800" />
+      <Setter Property="MinHeight" Value="30" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+    </Style>
+
+    <Style Selector="Button.SettingsButton">
+      <Setter Property="MinHeight" Value="30" />
+      <Setter Property="MinWidth" Value="120" />
+      <Setter Property="Padding" Value="12,5" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+    </Style>
+
+    <Style Selector="ComboBox.SettingsCombo">
+      <Setter Property="MinHeight" Value="30" />
+      <Setter Property="MinWidth" Value="220" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+    </Style>
+
+    <Style Selector="ColorPicker.SettingsColorPicker">
+      <Setter Property="HorizontalAlignment" Value="Left" />
+      <Setter Property="Width" Value="260" />
+    </Style>
+
+    <Style Selector="Button.SettingsButton.Compact">
+      <Setter Property="MinWidth" Value="90" />
+    </Style>
+
+    <Style Selector="Border.UpdatesSectionCard">
+      <Setter Property="Background" Value="#16000000" />
+      <Setter Property="BorderBrush" Value="#3A6B6F8F" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="12" />
+    </Style>
+
+    <Style Selector="Border.UpdatesHeroCard">
+      <Setter Property="Background" Value="#223E6C45" />
+      <Setter Property="BorderBrush" Value="#7A8E94B8" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="12,10" />
+    </Style>
+
+    <Style Selector="ListBox.UpdatesVersionsList">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+
+    <Style Selector="ListBox.UpdatesVersionsList > ListBoxItem">
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="0,0,0,8" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+
+    <Style Selector="ListBox.UpdatesVersionsList > ListBoxItem:selected">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+
+    <Style Selector="ListBox.UpdatesVersionsList > ListBoxItem:pointerover">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <Style Selector="ListBox.UpdatesVersionsList > ListBoxItem:focus">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <Style Selector="ListBox.UpdatesVersionsList > ListBoxItem:selected /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <Style Selector="Border.update-version-card">
+      <Setter Property="Background" Value="#1AFFFFFF" />
+      <Setter Property="BorderBrush" Value="#33575B7F" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="10,8" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+
+    <Style Selector="ListBox.UpdatesVersionsList > ListBoxItem:pointerover Border.update-version-card">
+      <Setter Property="Background" Value="#2A575B7F" />
+      <Setter Property="BorderBrush" Value="#AA8E94B8" />
+    </Style>
+
+    <Style Selector="ListBox.UpdatesVersionsList > ListBoxItem:selected Border.update-version-card">
+      <Setter Property="Background" Value="#2E3E6C45" />
+      <Setter Property="BorderBrush" Value="#FF8E94B8" />
+      <Setter Property="BorderThickness" Value="2" />
+    </Style>
+
+    <Style Selector="ListBox.UpdatesVersionsList > ListBoxItem:selected Border.update-version-card Border.update-version-indicator">
+      <Setter Property="Background" Value="#8E94B8" />
+    </Style>
+
+    <Style Selector="Border.update-version-channel">
+      <Setter Property="Padding" Value="8,2" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Background" Value="#2A5FA8" />
+    </Style>
+  </UserControl.Styles>
+
+    <TabControl SelectedIndex="{Binding SelectedSettingsTabIndex, Mode=TwoWay}">
+      <TabItem Header="{loc:Loc marsey-Header-Game}">
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="12" Spacing="10">
+                <TextBlock Text="{loc:Loc marsey-Header-Game}" 
+                          Classes="NanoHeadingMedium" 
+                          FontWeight="SemiBold" 
+                          Margin="0,0,0,0"/>
+            <StackPanel Spacing="8">
+                <views:LanguageSelector HorizontalAlignment="Left" 
+                                        DataContext="{Binding Language}"
+                                        Placement="BottomEdgeAlignedLeft" />
+            </StackPanel>
+
+            <Separator Height="1" Opacity="0.1" Background="White"/>
+
+            <StackPanel Spacing="12">
+                <StackPanel>
+                    <CheckBox IsChecked="{Binding HWID2OptOut}" Content="{loc:Loc marsey-Explicitly-disallow-HWID}" />
+                    <StackPanel Margin="26,2,0,0">
+                        <TextBlock Text="{loc:Loc marsey-Explicitly-disallow-HWID-1}" Opacity="0.5" FontSize="11" TextWrapping="Wrap"/>
+                        <TextBlock Text="{loc:Loc marsey-Explicitly-disallow-HWID-2}" Opacity="0.5" FontSize="11" FontWeight="Bold" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel>
+                    <CheckBox IsChecked="{Binding CompatMode}" Content="{loc:Loc marsey-Compatibility-Mode-Short}" />
+                    <TextBlock Text="{loc:Loc marsey-Compatibility-Mode}" Margin="26,2,0,0" Opacity="0.5" FontSize="11" TextWrapping="Wrap"/>
+                </StackPanel>
+
+                <StackPanel>
+                    <CheckBox IsChecked="{Binding DynamicPgo}" Content="{loc:Loc marsey-Experimental-Performance-Options-Short}" />
+                    <TextBlock Text="{loc:Loc marsey-Experimental-Performance-Options}" Margin="26,2,0,0" Opacity="0.5" FontSize="11" TextWrapping="Wrap"/>
+                </StackPanel>
+            </StackPanel>
+
+            <StackPanel Spacing="8">
+                <TextBlock Text="{loc:Loc marsey-Server-List-View}" Classes="NanoHeadingMedium" FontWeight="SemiBold" />
+                <WrapPanel Margin="4,0,0,0"> <CheckBox Margin="0,0,16,0" IsChecked="{Binding ServerListShowRoundTime}" Content="{loc:Loc marsey-Server-List-Show-Time}" />
+                    <CheckBox Margin="0,0,16,0" IsChecked="{Binding ServerListShowPlayers}" Content="{loc:Loc marsey-Server-List-Show-Players}" />
+                    <CheckBox Margin="0,0,16,0" IsChecked="{Binding ServerListShowMap}" Content="{loc:Loc marsey-Server-List-Show-Map}" />
+                    <CheckBox Margin="0,0,16,0" IsChecked="{Binding ServerListShowMode}" Content="{loc:Loc marsey-Server-List-Show-Mode}" />
+                    <CheckBox Margin="0,0,16,0" IsChecked="{Binding ServerListShowPing}" Content="{loc:Loc marsey-Server-List-Show-Ping}" />
+                </WrapPanel>
+                <TextBlock Text="{loc:Loc marsey-Server-List-View-Desc}" Margin="4,0,0,0" Opacity="0.5" FontSize="11" TextWrapping="Wrap"/>
+            </StackPanel>
+
+            <Separator Height="1" Opacity="0.1" Background="White"/>
+
+            <UniformGrid Columns="2" HorizontalAlignment="Left" MaxWidth="560">
+                <Button Name="HubSettings" Classes="SettingsButton" Content="{loc:Loc marsey-Hub-Settings}" Click="OpenHubSettings" Margin="4"/>
+                <Button Name="AccountSettings" Classes="SettingsButton" Content="{loc:Loc marsey-Account-Settings-Short}" Command="{Binding OpenAccountSettings}" Margin="4" />
+                <Button Name="ClearEnginesButton" Classes="SettingsButton" Content="{loc:Loc tab-options-clear-engines}" Click="ClearEnginesPressed" Margin="4"/>
+                <Button Name="ClearServerContentButton" Classes="SettingsButton" Content="{loc:Loc tab-options-clear-content}" Click="ClearServerContentPressed" Margin="4"/>
+            </UniformGrid>
+
+            <Button Content="{loc:Loc tab-options-flip}" Classes="SettingsButton Compact" HorizontalAlignment="Right" Name="Flip" Opacity="0.3" FontSize="10"/>
+        </StackPanel>
+    </ScrollViewer>
+</TabItem>
+
+      <TabItem Header="{loc:Loc marsey-Header-Safety}">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Margin="12" Spacing="10">
+
+            <StackPanel Spacing="6">
+              <TextBlock Text="{loc:Loc marsey-Hide-Level}" Classes="NanoHeadingMedium" FontWeight="SemiBold" />
+              <DockPanel LastChildFill="True">
+                <ComboBox Classes="SettingsCombo" DockPanel.Dock="Left" Width="200" ItemsSource="{Binding HideLevels}" SelectedItem="{Binding HideLevel}" VerticalAlignment="Center">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="{Binding}" />
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+                <TextBlock VerticalAlignment="Center" TextWrapping="Wrap" Margin="12,0,0,0" Text="{loc:Loc marsey-HideLevel-Desc}" Opacity="0.7" FontSize="12"/>
+              </DockPanel>
+              <Border Background="{DynamicResource SukiBackground}" CornerRadius="4" Padding="0" Margin="0,4,0,0">
+                <TextBlock TextWrapping="Wrap" Text="{Binding HideLevel, Converter={StaticResource HideLevelDescriptionConverter}}" FontSize="12" FontStyle="Italic"/>
+              </Border>
+            </StackPanel>
+
+            <StackPanel Spacing="8">
+              <TextBlock Text="{loc:Loc marsey-Launcher-Behavior}" Classes="NanoHeadingMedium" FontWeight="SemiBold" />
+              <StackPanel>
+                <CheckBox IsChecked="{Binding NoActiveInit}" Content="{loc:Loc marsey-Disable-Auto-Login}" />
+                <TextBlock Text="{loc:Loc marsey-Disable-Auto-Login-Desc}" Margin="26,2,0,0" Opacity="0.5" FontSize="11" TextWrapping="Wrap"/>
+              </StackPanel>
+            </StackPanel>
+
+            <StackPanel Spacing="10">
+              <TextBlock Text="{loc:Loc marsey-Game-Behavior}" Classes="NanoHeadingMedium" FontWeight="SemiBold" />
+              
+              <StackPanel>
+                <CheckBox IsChecked="{Binding DisableRPC}" Content="{loc:Loc marsey-Disable-RPC}" />
+                <TextBlock Text="{loc:Loc marsey-Disable-RPC-Desc}" Margin="26,2,0,0" Opacity="0.5" FontSize="11" TextWrapping="Wrap"/>
+              </StackPanel>
+
+              <StackPanel>
+                <CheckBox IsChecked="{Binding FakeRPC}" Content="{loc:Loc marsey-Fake-RPC}" />
+                <TextBlock Text="{loc:Loc marsey-Fake-RPC-Desc}" Margin="26,2,0,0" Opacity="0.5" FontSize="11" TextWrapping="Wrap"/>
+                
+                <StackPanel IsVisible="{Binding FakeRPC}" Margin="26,10,0,0" Spacing="6">
+                  <TextBlock Text="{loc:Loc marsey-RPC-Username-Desc}" Opacity="0.7" FontSize="12"/>
+                  <DockPanel LastChildFill="True" MaxWidth="600" HorizontalAlignment="Left">
+                    <Button Classes="SettingsButton Compact" DockPanel.Dock="Right" Content="{loc:Loc marsey-Set-RPC-Username-Button}" Command="{Binding SetRPCUsernameCommand}" Margin="8,0,0,0"/>
+                    <TextBox Classes="SettingsInput" Text="{Binding RPCUsername, Mode=TwoWay}" Watermark="Enter RPC Username..."/>
+                  </DockPanel>
+                </StackPanel>
+              </StackPanel>
+
+              <StackPanel>
+                <CheckBox IsChecked="{Binding MarseyJam}" Content="{loc:Loc marsey-Disable-Redial}" />
+                <TextBlock Text="{loc:Loc marsey-Disable-Redial-Desc}" Margin="26,2,0,0" Opacity="0.5" FontSize="11" TextWrapping="Wrap"/>
+              </StackPanel>
+            </StackPanel>
+
+            <StackPanel Spacing="10">
+              <TextBlock Text="{loc:Loc marsey-HWID}" Classes="NanoHeadingMedium" FontWeight="SemiBold" />
+              <StackPanel>
+                <CheckBox IsChecked="{Binding ForcingHWID}" Content="{loc:Loc marsey-Force-HWID}" />
+                <TextBlock Text="{loc:Loc marsey-Force-HWID-Desc}" Margin="26,2,0,0" Opacity="0.5" FontSize="11" TextWrapping="Wrap"/>
+              </StackPanel>
+
+              <StackPanel IsVisible="{Binding ForcingHWID}" Margin="26,4,0,0" Spacing="12">
+                <StackPanel>
+                  <CheckBox IsChecked="{Binding LIHWIDBind}" Content="{loc:Loc marsey-Bind-HWID}" />
+                  <TextBlock Text="{loc:Loc marsey-Bind-HWID-Desc}" Margin="26,2,0,0" Opacity="0.5" FontSize="11" TextWrapping="Wrap"/>
+                </StackPanel>
+
+                <StackPanel Spacing="6">
+                  <TextBlock Text="{loc:Loc marsey-Change-HWID}" Opacity="0.7" FontSize="12"/>
+                  <TextBox Classes="SettingsInput" Text="{Binding HWIdString, Mode=TwoWay}" BorderBrush="{Binding HWIDTextBoxBorderBrush}" MaxWidth="800" HorizontalAlignment="Left"/>
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Classes="SettingsButton Compact" Content="{loc:Loc marsey-Set-HWID}" Command="{Binding SetHWIdCommand}" MinWidth="100"/>
+                    <Button Classes="SettingsButton Compact" Content="{loc:Loc marsey-Generate-Random}" Command="{Binding GenHWIdCommand}" />
+                  </StackPanel>
+                </StackPanel>
+              </StackPanel>
+            </StackPanel>
+
+            <StackPanel Spacing="10">
+              <TextBlock Text="{loc:Loc marsey-Patching}" Classes="NanoHeadingMedium" FontWeight="SemiBold" />
+              <StackPanel>
+                <CheckBox IsChecked="{Binding ThrowPatchFail}" Content="{loc:Loc marsey-Except-On-Patch-Fail}" />
+                <TextBlock Text="{loc:Loc marsey-Except-On-Patch-Fail-Desc}" Margin="26,2,0,0" Opacity="0.5" FontSize="11" TextWrapping="Wrap"/>
+              </StackPanel>
+
+              <StackPanel>
+                <CheckBox IsChecked="{Binding MarseyHole}" Content="{loc:Loc marsey-Whitelist-RemoteExecuteCommand}" />
+                <StackPanel Margin="26,2,0,0">
+                  <TextBlock Text="{loc:Loc marsey-Whitelist-RemoteExecuteCommand-Desc}" Opacity="0.5" FontSize="11" TextWrapping="Wrap"/>
+                  <TextBlock Text="{loc:Loc marsey-Whitelist-RemoteExecuteCommand-Warn}" Opacity="0.8" FontSize="11" Foreground="#FF5555" FontWeight="Bold" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                </StackPanel>
+              </StackPanel>
+            </StackPanel>
+
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="{loc:Loc marsey-Header-Themes}">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Margin="12" Spacing="18">
+
+            <StackPanel Spacing="6">
+              <TextBlock Text="{loc:Loc marsey-Theme}" Classes="NanoHeadingMedium" FontWeight="SemiBold" />
+              <TextBlock Text="{loc:Loc marsey-Theme-Desc}" Opacity="0.5" FontSize="11" TextWrapping="Wrap" Margin="4,0,0,4"/>
+              <ComboBox Classes="SettingsCombo" ItemsSource="{Binding Themes}" 
+                        SelectedItem="{Binding SelectedTheme}" 
+                        HorizontalAlignment="Left" 
+                        Width="300" 
+                        Margin="4,0,0,0">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding Converter={StaticResource ThemeDescriptionConverter}}" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </StackPanel>
+
+            <StackPanel Spacing="8" IsVisible="{Binding IsCustomThemeSelected}">
+              <TextBlock Text="{loc:Loc marsey-Theme-Custom-Colors}" Classes="NanoHeadingSmall" FontWeight="SemiBold" />
+              <TextBlock Text="{loc:Loc marsey-Theme-Custom-Colors-Desc}" Opacity="0.5" FontSize="11" TextWrapping="Wrap" Margin="4,0,0,2"/>
+
+              <StackPanel Spacing="6" Margin="4,0,0,0">
+                <TextBlock Text="{loc:Loc marsey-Theme-Custom-Background}" Opacity="0.8" FontSize="12" />
+                <colorControls:ColorPicker Classes="SettingsColorPicker"
+                                           IsAlphaEnabled="False"
+                                           IsAlphaVisible="False"
+                                           Color="{Binding CustomThemeBackground, Mode=TwoWay}" />
+              </StackPanel>
+
+              <StackPanel Spacing="6" Margin="4,0,0,0">
+                <TextBlock Text="{loc:Loc marsey-Theme-Custom-Accent}" Opacity="0.8" FontSize="12" />
+                <colorControls:ColorPicker Classes="SettingsColorPicker"
+                                           IsAlphaEnabled="False"
+                                           IsAlphaVisible="False"
+                                           Color="{Binding CustomThemeAccent, Mode=TwoWay}" />
+              </StackPanel>
+
+              <StackPanel Spacing="6" Margin="4,0,0,0">
+                <TextBlock Text="{loc:Loc marsey-Theme-Custom-Text}" Opacity="0.8" FontSize="12" />
+                <colorControls:ColorPicker Classes="SettingsColorPicker"
+                                           IsAlphaEnabled="False"
+                                           IsAlphaVisible="False"
+                                           Color="{Binding CustomThemeForeground, Mode=TwoWay}" />
+              </StackPanel>
+
+              <StackPanel Spacing="6" Margin="4,0,0,0">
+                <TextBlock Text="{loc:Loc marsey-Theme-Custom-Popup}" Opacity="0.8" FontSize="12" />
+                <colorControls:ColorPicker Classes="SettingsColorPicker"
+                                           IsAlphaEnabled="False"
+                                           IsAlphaVisible="False"
+                                           Color="{Binding CustomThemePopup, Mode=TwoWay}" />
+              </StackPanel>
+
+              <StackPanel Spacing="6" Margin="4,0,0,0">
+                <TextBlock Text="{loc:Loc marsey-Theme-Custom-Gradient-Start}" Opacity="0.8" FontSize="12" />
+                <colorControls:ColorPicker Classes="SettingsColorPicker"
+                                           IsAlphaEnabled="False"
+                                           IsAlphaVisible="False"
+                                           Color="{Binding CustomThemeGradientStart, Mode=TwoWay}" />
+              </StackPanel>
+
+              <StackPanel Spacing="6" Margin="4,0,0,0">
+                <TextBlock Text="{loc:Loc marsey-Theme-Custom-Gradient-End}" Opacity="0.8" FontSize="12" />
+                <colorControls:ColorPicker Classes="SettingsColorPicker"
+                                           IsAlphaEnabled="False"
+                                           IsAlphaVisible="False"
+                                           Color="{Binding CustomThemeGradientEnd, Mode=TwoWay}" />
+              </StackPanel>
+
+              <StackPanel Orientation="Horizontal" Spacing="8" Margin="4,2,0,0">
+                <Button Classes="SettingsButton Compact"
+                        Content="{loc:Loc marsey-Theme-Custom-Reset}"
+                        Click="ResetCustomTheme" />
+                <Button Classes="SettingsButton Compact"
+                        Content="{loc:Loc marsey-Theme-Custom-Import}"
+                        Click="ImportCustomTheme" />
+                <Button Classes="SettingsButton Compact"
+                        Content="{loc:Loc marsey-Theme-Custom-Export}"
+                        Click="ExportCustomTheme" />
+              </StackPanel>
+            </StackPanel>
+
+            <StackPanel Spacing="12">
+              <StackPanel>
+                <CheckBox IsChecked="{Binding ThemeGradient}" Content="{loc:Loc marsey-Theme-Gradient}" />
+                <TextBlock Text="{loc:Loc marsey-Theme-Gradient-Desc}" Margin="26,2,0,0" Opacity="0.5" FontSize="11" TextWrapping="Wrap"/>
+              </StackPanel>
+
+              <StackPanel>
+                <CheckBox IsChecked="{Binding ThemeDecor}" Content="{loc:Loc marsey-Theme-Decor}" />
+                <TextBlock Text="{loc:Loc marsey-Theme-Decor-Desc}" Margin="26,2,0,0" Opacity="0.5" FontSize="11" TextWrapping="Wrap"/>
+              </StackPanel>
+            </StackPanel>
+
+            <Separator Height="1" Opacity="0.1" Background="White"/>
+
+            <StackPanel Spacing="8">
+              <TextBlock Text="{loc:Loc marsey-Theme-Font}" Classes="NanoHeadingSmall" FontWeight="SemiBold" />
+              <TextBlock Text="{loc:Loc marsey-Theme-Font-Desc}" Opacity="0.5" FontSize="11" TextWrapping="Wrap" Margin="4,0,0,4"/>
+              
+              <DockPanel LastChildFill="True" MaxWidth="500" HorizontalAlignment="Left" Margin="4,0,0,0">
+                <Button Classes="SettingsButton Compact" DockPanel.Dock="Right" 
+                        Content="{loc:Loc marsey-Theme-Font-Load}" 
+                        Click="PickCustomFont" 
+                        Margin="8,0,0,0"
+                        Padding="10,4"/>
+                <ComboBox Classes="SettingsCombo" ItemsSource="{Binding ThemeFonts}" 
+                          SelectedItem="{Binding SelectedThemeFont}"
+                          VerticalAlignment="Center">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="{Binding Name}" />
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+              </DockPanel>
+
+              <TextBlock IsVisible="{Binding CustomFontInfo, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                        Text="{Binding CustomFontInfo, StringFormat='Custom font: {0}'}"
+                        Margin="4,4,0,0" 
+                        FontSize="12" 
+                        FontStyle="Italic" 
+                        Opacity="0.8" 
+                        Foreground="{DynamicResource SystemAccentColor}"/>
+            </StackPanel>
+
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="{loc:Loc marsey-Header-Logging}">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Margin="12" Spacing="10">
+                
+                <StackPanel Spacing="4">
+                    <TextBlock Text="{loc:Loc marsey-Logging-Game}" Classes="NanoHeadingMedium" FontWeight="SemiBold"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Classes="SettingsButton Compact" Content="{loc:Loc marsey-Open-Log-Directory}" 
+                                Command="{Binding OpenLogDirectory}" 
+                                Padding="10,4"/>
+                        <Button Classes="SettingsButton Compact" Content="{loc:Loc marsey-Dump-CVars}" 
+                                Command="{Binding DumpConfigCommand}" 
+                                Padding="10,4"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <Separator Height="1" Opacity="0.1" Background="White"/>
+
+                <StackPanel Spacing="12">
+                    
+                    <StackPanel>
+                        <CheckBox IsChecked="{Binding LogClient}" Content="{loc:Loc marsey-Log-Client}" />
+                        <TextBlock Text="{loc:Loc marsey-Log-Client-Desc}" Margin="26,2,0,0" Opacity="0.5" FontSize="11" TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <StackPanel>
+                        <CheckBox IsChecked="{Binding LogLauncher}" Content="{loc:Loc marsey-Log-Launcher}" />
+                        <TextBlock Text="{loc:Loc marsey-Log-Launcher-Desc}" Margin="26,2,0,0" Opacity="0.5" FontSize="11" TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <StackPanel>
+                        <CheckBox IsChecked="{Binding LogLauncherVerbose}" Content="{loc:Loc marsey-Verbose-Launcher-Logging}" />
+                        <TextBlock Text="{loc:Loc marsey-Verbose-Launcher-Logging-Desc}" Margin="26,2,0,0" Opacity="0.5" FontSize="11" TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <StackPanel>
+                        <CheckBox IsChecked="{Binding LogPatches}" Content="{loc:Loc marsey-Log-Patches}" />
+                        <TextBlock Text="{loc:Loc marsey-Log-Patches-Desc}" Margin="26,2,0,0" Opacity="0.5" FontSize="11" TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <StackPanel>
+                        <CheckBox IsChecked="{Binding LogLauncherPatcher}" Content="{loc:Loc marsey-Enable-Launcher-Patcher-Logging}" />
+                        <TextBlock Text="{loc:Loc marsey-Enable-Launcher-Patcher-Logging-Desc}" Margin="26,2,0,0" Opacity="0.5" FontSize="11" TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <StackPanel>
+                        <CheckBox IsChecked="{Binding LogLoaderDebug}" Content="{loc:Loc marsey-Enable-Loader-Debug-Logs}" />
+                        <TextBlock Text="{loc:Loc marsey-Enable-Loader-Debug-Logs-Desc}" Margin="26,2,0,0" Opacity="0.5" FontSize="11" TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <StackPanel IsVisible="{Binding !HideDebugKnobs}">
+                        <CheckBox IsChecked="{Binding LogTrace}" Content="{loc:Loc marsey-Log-Trace-MarseyLogger}" />
+                        <TextBlock Text="{loc:Loc marsey-Log-Trace-MarseyLogger-Desc}" Margin="26,2,0,0" Opacity="0.5" FontSize="11" TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <StackPanel>
+                        <CheckBox IsChecked="{Binding SeparateLogging}" Content="{loc:Loc marsey-Separate-Logging}" />
+                        <TextBlock Text="{loc:Loc marsey-Separate-Logging-Desc}" Margin="26,2,0,0" Opacity="0.5" FontSize="11" TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </TabItem>
+
+      <TabItem Header="{loc:Loc marsey-Header-Guest}">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Margin="12" Spacing="10">
+                <TextBlock Text="{loc:Loc marsey-Guest-Username}" 
+                          Classes="NanoHeadingMedium" 
+                          FontWeight="SemiBold" 
+                          Margin="0,0,0,4"/>
+                <DockPanel LastChildFill="True" MaxWidth="800" HorizontalAlignment="Left">
+                    <Button Classes="SettingsButton Compact" DockPanel.Dock="Right" 
+                            Content="{loc:Loc marsey-Set-Guest-Username}" 
+                            Command="{Binding SetGuestUsernameCommand}" 
+                            Margin="8,0,0,0"
+                            Padding="12,5"/>
+                    <TextBox x:Name="GuestNameTextBox" 
+                            Classes="SettingsInput"
+                            Text="{Binding GuestName}" 
+                            Watermark="{loc:Loc marsey-Guest-Username-Watermark}"
+                            VerticalContentAlignment="Center"/>
+                </DockPanel>
+                <TextBlock Text="{loc:Loc marsey-Guest-Username-Desc}" 
+                          Opacity="0.5" 
+                          FontSize="11" 
+                          Margin="4,0,0,0"/>
+            </StackPanel>
+        </ScrollViewer>
+    </TabItem>
+
+      <TabItem Header="{loc:Loc marsey-Header-Misc}">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Margin="12" Spacing="10">
+                <TextBlock Text="{loc:Loc marsey-Header-Misc}" 
+                          Classes="NanoHeadingMedium" 
+                          FontWeight="SemiBold" 
+                          Margin="0,0,0,4"/>
+                
+                <StackPanel Spacing="10">
+                    <StackPanel>
+                        <CheckBox IsChecked="{Binding Patchless}" Content="{loc:Loc marsey-Patchless}" />
+                        <TextBlock Text="{loc:Loc marsey-Patchless-Desc}" Margin="26,2,0,0" Opacity="0.5" FontSize="11" TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <StackPanel>
+                        <CheckBox IsChecked="{Binding SkipPrivacyPolicy}" Content="{loc:Loc marsey-Skip-Privacy-Policy}" />
+                        <TextBlock Text="{loc:Loc marsey-Skip-Privacy-Policy-Desc}" Margin="26,2,0,0" Opacity="0.5" FontSize="11" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel Spacing="4">
+                    <TextBlock Text="{loc:Loc marsey-Patches}" Classes="NanoHeadingMedium" FontWeight="SemiBold"/>
+                    <StackPanel>
+                        <CheckBox IsChecked="{Binding DumpAssemblies}" Content="{loc:Loc marsey-Dump-Resources}" />
+                        <TextBlock Text="{loc:Loc marsey-Dump-Resources-Desc}" Margin="26,2,0,0" Opacity="0.5" FontSize="11" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <Button Classes="SettingsButton Compact" Content="{loc:Loc marsey-Open-Dump-Directory}" Command="{Binding OpenDumpDirectoryCommand}" HorizontalAlignment="Left" Margin="0,4,0,0" MinWidth="120"/>
+                </StackPanel>
+
+                <StackPanel Spacing="0">
+                    <TextBlock Text="{loc:Loc marsey-Backports}" Classes="NanoHeadingMedium" FontWeight="SemiBold" />
+                    <StackPanel>
+                        <CheckBox IsChecked="{Binding Backports}" Content="{loc:Loc marsey-Backports}" />
+                        <TextBlock Text="{loc:Loc marsey-Backports-Desc}" Margin="26,2,0,0" Opacity="0.5" FontSize="11" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <StackPanel>
+                        <CheckBox IsChecked="{Binding DisableAnyEngineBackports}" Content="{loc:Loc marsey-Disable-Global-Backports}" />
+                        <TextBlock Text="{loc:Loc marsey-Disable-Global-Backports-Desc}" Margin="26,2,0,0" Opacity="0.5" FontSize="11" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel Spacing="4" IsVisible="{Binding !HideDebugKnobs}">
+                    <TextBlock Text="{loc:Loc marsey-Resource-Packs}" Classes="NanoHeadingMedium" FontWeight="SemiBold" />
+                    <StackPanel>
+                        <CheckBox IsChecked="{Binding ResourceOverride}" Content="{loc:Loc marsey-Resource-Override}" />
+                        <TextBlock Text="{loc:Loc marsey-Resource-Override-Desc}" Margin="26,2,0,0" Opacity="0.5" FontSize="11" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel Spacing="4">
+                    <TextBlock Text="{loc:Loc marsey-Title-Manager}" Classes="NanoHeadingMedium" FontWeight="SemiBold" />
+                    <StackPanel Spacing="6">
+                        <CheckBox IsChecked="{Binding RandTitle}" Content="{loc:Loc marsey-Randomize-Window-Titles}" />
+                        <CheckBox IsChecked="{Binding RandHeader}" Content="{loc:Loc marsey-Randomize-Header-Images}" />
+                        <CheckBox IsChecked="{Binding RandConnAction}" Content="{loc:Loc marsey-Randomize-Connection-Messages}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel Spacing="4">
+                    <TextBlock Text="{loc:Loc marsey-Usernames}" Classes="NanoHeadingMedium" FontWeight="SemiBold" />
+                    <TextBlock Text="{loc:Loc marsey-Change-Username}" Opacity="0.7" FontSize="12" Margin="4,0"/>
+                    <DockPanel LastChildFill="True" MaxWidth="800" HorizontalAlignment="Left">
+                        <Button Classes="SettingsButton Compact" DockPanel.Dock="Right" Content="{loc:Loc marsey-Set-Username}" Command="{Binding SetUsernameCommand}" Margin="8,0,0,0"/>
+                        <TextBox x:Name="UsernameTextBox" Classes="SettingsInput" Text="{Binding Username}" Watermark="Enter username..."/>
+                    </DockPanel>
+                </StackPanel>
+
+            </StackPanel>
+        </ScrollViewer>
+    </TabItem>
+
+
+
+      <TabItem Header="{loc:Loc tab-proxy-title}">
+        <tabViews:ProxyTabView DataContext="{Binding ProxyTab}" />
+      </TabItem>
+
+      <TabItem Header="{loc:Loc launcher-updates-tab-title}">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Margin="12" Spacing="12">
+            <Border Classes="UpdatesHeroCard">
+              <StackPanel Spacing="6">
+                <TextBlock Text="{loc:Loc launcher-updates-header}" Classes="NanoHeadingMedium" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding LauncherVersionsStatus}" Opacity="0.82" FontSize="12" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+
+            <Border Classes="UpdatesSectionCard">
+              <StackPanel Spacing="12">
+                <StackPanel>
+                  <CheckBox IsChecked="{Binding LauncherAutoUpdate}" Content="{loc:Loc launcher-updates-auto}" />
+                  <TextBlock Text="{loc:Loc launcher-updates-auto-desc}" Margin="26,2,0,0" Opacity="0.6" FontSize="11" TextWrapping="Wrap"/>
+                </StackPanel>
+
+                <StackPanel>
+                  <CheckBox IsChecked="{Binding LauncherUpdateNotify}" Content="{loc:Loc launcher-updates-notify}" />
+                  <TextBlock Text="{loc:Loc launcher-updates-notify-desc}" Margin="26,2,0,0" Opacity="0.6" FontSize="11" TextWrapping="Wrap"/>
+                </StackPanel>
+                
+                <StackPanel>
+                  <CheckBox IsChecked="{Binding LauncherUpdateAllowPreRelease}" Content="{loc:Loc launcher-updates-allow-prerelease}" />
+                  <TextBlock Text="{loc:Loc launcher-updates-allow-prerelease-desc}" Margin="26,2,0,0" Opacity="0.6" FontSize="11" TextWrapping="Wrap"/>
+                </StackPanel>
+
+                <StackPanel Spacing="6">
+                  <TextBlock Text="{loc:Loc launcher-updates-repo}" Opacity="0.85" FontSize="12"/>
+                  <TextBox Classes="SettingsInput"
+                           Text="{Binding LauncherUpdateRepo, Mode=TwoWay}"
+                           Watermark="{loc:Loc launcher-updates-repo-placeholder}"/>
+                  <TextBlock Text="{loc:Loc launcher-updates-repo-desc}" Opacity="0.55" FontSize="11" TextWrapping="Wrap"/>
+                </StackPanel>
+
+              </StackPanel>
+            </Border>
+
+            <Border Classes="UpdatesSectionCard">
+              <StackPanel Spacing="8">
+                <DockPanel LastChildFill="False">
+                  <Button DockPanel.Dock="Right" Classes="SettingsButton Compact" Content="{loc:Loc launcher-updates-list-refresh}" Command="{Binding RefreshLauncherVersionsCommand}" />
+                  <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" Margin="0,0,10,0" VerticalAlignment="Center">
+                    <TextBlock Text="{loc:Loc launcher-updates-filter-label}" Opacity="0.75" VerticalAlignment="Center" />
+                    <ComboBox Classes="SettingsCombo"
+                              MinWidth="170"
+                              ItemsSource="{Binding LauncherVersionFilters}"
+                              SelectedItem="{Binding SelectedLauncherVersionFilter}">
+                      <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                          <TextBlock Text="{Binding Text}" />
+                        </DataTemplate>
+                      </ComboBox.ItemTemplate>
+                    </ComboBox>
+                  </StackPanel>
+                  <TextBlock DockPanel.Dock="Left" Text="{loc:Loc launcher-updates-list-title}" Classes="NanoHeadingSmall" FontWeight="SemiBold"/>
+                </DockPanel>
+
+                <ProgressBar IsVisible="{Binding LauncherVersionsLoading}" IsIndeterminate="True" Height="4" />
+
+                <Border CornerRadius="8" ClipToBounds="True">
+                  <ListBox Classes="UpdatesVersionsList"
+                           ItemsSource="{Binding LauncherAvailableVersions}"
+                           SelectedItem="{Binding SelectedLauncherVersion, Mode=TwoWay}"
+                           MaxHeight="260">
+                    <ListBox.ItemTemplate>
+                      <DataTemplate>
+                        <Border Classes="update-version-card"
+                                ToolTip.Tip="{Binding Tooltip}">
+                          <Grid ColumnDefinitions="4,*,Auto" RowDefinitions="Auto,Auto,Auto">
+                            <Border Grid.RowSpan="3" Grid.Column="0" Classes="update-version-indicator" Background="#60575B7F" CornerRadius="4"/>
+
+                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Title}" FontWeight="SemiBold" Margin="10,0,10,0"/>
+                            <Border Grid.Row="0" Grid.Column="2"
+                                    Classes="update-version-channel"
+                                    Background="{Binding ChannelBadgeBackground}">
+                              <TextBlock Text="{Binding ChannelText}"
+                                         FontSize="10"
+                                         FontWeight="SemiBold"
+                                         Foreground="{Binding ChannelBadgeForeground}" />
+                            </Border>
+                            <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding Subtitle}" FontSize="11" Opacity="0.65" Margin="10,2,0,0"/>
+                            <TextBlock Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding NotesPreview}" FontSize="11" Opacity="0.85" Margin="10,4,0,0" TextWrapping="Wrap"/>
+                          </Grid>
+                        </Border>
+                      </DataTemplate>
+                    </ListBox.ItemTemplate>
+                  </ListBox>
+                </Border>
+
+                <DockPanel LastChildFill="False" Margin="0,2,0,0">
+                  <Button DockPanel.Dock="Left"
+                          Classes="SettingsButton Compact"
+                          Content="{loc:Loc launcher-updates-list-open}"
+                          IsEnabled="{Binding CanOpenSelectedLauncherVersion}"
+                          Command="{Binding OpenSelectedLauncherVersionCommand}" />
+                  <Button DockPanel.Dock="Right"
+                          Classes="SettingsButton"
+                          Content="{loc:Loc launcher-updates-list-install-selected}"
+                          IsEnabled="{Binding CanInstallSelectedLauncherVersion}"
+                          Command="{Binding InstallSelectedLauncherVersionCommand}" />
+                </DockPanel>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="{loc:Loc tab-development-title}">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Orientation="Vertical">
+          <CheckBox VerticalAlignment="Center" Margin="4" IsChecked="{Binding DisableSigning}" Content="{loc:Loc tab-development-disable-signing}" />
+          <TextBlock VerticalAlignment="Center" TextWrapping="Wrap"
+                     Text="{loc:Loc tab-development-disable-signing-desc}"
+                     Margin="8" Opacity="0.7" FontSize="12"/>
+
+          <Grid ColumnDefinitions="Auto,*">
+            <CheckBox VerticalAlignment="Center" Margin="4" IsChecked="{Binding EngineOverrideEnabled}" Content="{loc:Loc tab-development-enable-engine-override}" />
+            <TextBox Grid.Column="1" Classes="SettingsInput" Text="{Binding EngineOverridePath}" />
+
+          </Grid>
+          <TextBlock VerticalAlignment="Center" TextWrapping="Wrap"
+                     Text="{loc:Loc tab-development-enable-engine-override-desc}"
+                     Margin="8" Opacity="0.7" FontSize="12"/>
+        </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+  </TabControl>
+</UserControl>

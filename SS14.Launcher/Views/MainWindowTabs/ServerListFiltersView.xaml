@@ -1,0 +1,76 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mainWindowTabs="clr-namespace:SS14.Launcher.ViewModels.MainWindowTabs"
+             xmlns:mwtv="clr-namespace:SS14.Launcher.Views.MainWindowTabs"
+             xmlns:loc="clr-namespace:SS14.Launcher.Localization"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="SS14.Launcher.Views.MainWindowTabs.ServerListFiltersView">
+  <Design.DataContext>
+    <mainWindowTabs:ServerListFiltersViewModel />
+  </Design.DataContext>
+
+  <UserControl.Styles>
+    <Style Selector=":is(Panel).ServerFilterGroup">
+      <Setter Property="Margin" Value="4" />
+    </Style>
+  </UserControl.Styles>
+
+  <UserControl.Resources>
+    <ItemsPanelTemplate x:Key="PanelTemplate">
+      <WrapPanel />
+    </ItemsPanelTemplate>
+    <DataTemplate x:Key="FilterTemplate" DataType="mainWindowTabs:ServerFilterViewModel">
+      <mwtv:ServerFilterView DataContext="{Binding}" Width="150" />
+    </DataTemplate>
+    <DataTemplate x:Key="WideFilterTemplate" DataType="mainWindowTabs:ServerFilterViewModel">
+      <mwtv:ServerFilterView DataContext="{Binding}" Width="300" />
+    </DataTemplate>
+  </UserControl.Resources>
+
+  <DockPanel>
+    <TextBlock DockPanel.Dock="Top" Text="{loc:Loc filters-title}" Classes="SubText" Margin="4 4 4 8" />
+
+    <ScrollViewer>
+      <StackPanel Orientation="Vertical">
+        <DockPanel Classes="ServerFilterGroup">
+          <TextBlock MinWidth="150" DockPanel.Dock="Left" Classes="SubText" Text="{loc:Loc filters-title-language}" />
+          <ItemsControl ItemsSource="{Binding FiltersLanguage}"
+                        ItemsPanel="{StaticResource PanelTemplate}" ItemTemplate="{StaticResource FilterTemplate}"/>
+        </DockPanel>
+        <DockPanel Classes="ServerFilterGroup">
+          <TextBlock MinWidth="150" DockPanel.Dock="Left" Classes="SubText" Text="{loc:Loc filters-title-region}" />
+          <ItemsControl ItemsSource="{Binding FiltersRegion}"
+                        ItemsPanel="{StaticResource PanelTemplate}" ItemTemplate="{StaticResource FilterTemplate}"/>
+        </DockPanel>
+        <DockPanel Classes="ServerFilterGroup">
+          <TextBlock MinWidth="150" DockPanel.Dock="Left" Classes="SubText" Text="{loc:Loc filters-title-rp}" />
+          <ItemsControl ItemsSource="{Binding FiltersRolePlay}"
+                        ItemsPanel="{StaticResource PanelTemplate}" ItemTemplate="{StaticResource FilterTemplate}"/>
+        </DockPanel>
+        <DockPanel Classes="ServerFilterGroup">
+          <TextBlock MinWidth="150" DockPanel.Dock="Left" Classes="SubText" Text="{loc:Loc filters-title-player-count}" />
+          <WrapPanel>
+            <mwtv:ServerFilterCounterView DataContext="{Binding FilterPlayerCountMinimum}" />
+            <mwtv:ServerFilterCounterView DataContext="{Binding FilterPlayerCountMaximum}" />
+            <mwtv:ServerFilterView Width="150" DataContext="{Binding FilterPlayerCountHideEmpty}" />
+            <mwtv:ServerFilterView Width="150" DataContext="{Binding FilterPlayerCountHideFull}" />
+          </WrapPanel>
+        </DockPanel>
+        <DockPanel Classes="ServerFilterGroup">
+          <TextBlock MinWidth="150" DockPanel.Dock="Left" VerticalAlignment="Center" Classes="SubText" Text="{loc:Loc filters-title-18}" />
+          <ItemsControl ItemsSource="{Binding FiltersEighteenPlus}"
+                        ItemsPanel="{StaticResource PanelTemplate}" ItemTemplate="{StaticResource FilterTemplate}"/>
+        </DockPanel>
+
+        <DockPanel Classes="ServerFilterGroup">
+          <TextBlock MinWidth="150" DockPanel.Dock="Left" Classes="SubText" Text="{loc:Loc filters-title-hub}" />
+          <ItemsControl ItemsSource="{Binding FiltersHub}"
+                        ItemsPanel="{StaticResource PanelTemplate}" ItemTemplate="{StaticResource WideFilterTemplate}">
+          </ItemsControl>
+        </DockPanel>
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

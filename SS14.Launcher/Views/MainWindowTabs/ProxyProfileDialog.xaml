@@ -1,0 +1,44 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:loc="clr-namespace:SS14.Launcher.Localization"
+        mc:Ignorable="d" d:DesignWidth="420" d:DesignHeight="260"
+        MinWidth="420" MinHeight="240"
+        Width="480" Height="300"
+        x:Class="SS14.Launcher.Views.MainWindowTabs.ProxyProfileDialog"
+        Icon="{DynamicResource WindowIcon}"
+        Title="{loc:Loc tab-proxy-dialog-title}"
+        WindowStartupLocation="CenterOwner">
+  <StackPanel Margin="12" Spacing="10">
+    <TextBlock Text="{loc:Loc tab-proxy-dialog-name}" />
+    <TextBox Name="NameBox" />
+
+    <Grid ColumnDefinitions="*,120">
+      <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,8,0">
+        <TextBlock Text="{loc:Loc tab-proxy-dialog-host}" />
+        <TextBox Name="HostBox" />
+      </StackPanel>
+      <StackPanel Grid.Column="1" Spacing="4">
+        <TextBlock Text="{loc:Loc tab-proxy-dialog-port}" />
+        <TextBox Name="PortBox" />
+      </StackPanel>
+    </Grid>
+
+    <Grid ColumnDefinitions="*,*,Auto" RowDefinitions="Auto,Auto">
+      <TextBlock Grid.Column="0" Grid.Row="0" Text="{loc:Loc tab-proxy-dialog-user}" />
+      <TextBlock Grid.Column="1" Grid.Row="0" Text="{loc:Loc tab-proxy-dialog-pass}" Margin="8,0,0,0" />
+      <TextBox Grid.Column="0" Grid.Row="1" Name="UserBox" />
+      <TextBox Grid.Column="1" Grid.Row="1" Name="PassHiddenBox" PasswordChar="*" Margin="8,0,0,0" />
+      <TextBox Grid.Column="1" Grid.Row="1" Name="PassVisibleBox" IsVisible="False" Margin="8,0,0,0" />
+      <CheckBox Grid.Column="2" Grid.Row="1" Name="ShowPasswordBox" Content="{loc:Loc tab-proxy-dialog-show-pass}" VerticalAlignment="Center" Margin="8,0,0,0" Checked="ShowPasswordChanged" Unchecked="ShowPasswordChanged" />
+    </Grid>
+
+    <TextBlock Name="ErrorText" Foreground="#E67676" TextWrapping="Wrap" />
+
+    <DockPanel LastChildFill="False" Margin="0,8,0,0">
+      <Button DockPanel.Dock="Right" Name="SaveButton" Content="{loc:Loc tab-proxy-dialog-save}" Click="SaveClicked" />
+      <Button DockPanel.Dock="Right" Content="{loc:Loc tab-proxy-dialog-cancel}" Click="CancelClicked" Margin="0,0,8,0" />
+    </DockPanel>
+  </StackPanel>
+</Window>

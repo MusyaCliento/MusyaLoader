@@ -1,0 +1,31 @@
+<Style xmlns="https://github.com/avaloniaui"
+       xmlns:views="clr-namespace:SS14.Launcher.Views"
+       Selector="ContentControl.OverlayBox">
+  <Setter Property="Template">
+    <ControlTemplate>
+      <Panel Background="{DynamicResource WindowOverlayBrush}">
+        <Panel HorizontalAlignment="Center" VerticalAlignment="Center">
+          <views:AngleBox Fill="{TemplateBinding Background}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+
+          <Panel Margin="14 0">
+            <ContentPresenter Name="PART_ContentPresenter"
+                              Background="{TemplateBinding Background}"
+                              BorderBrush="{TemplateBinding BorderBrush}"
+                              BorderThickness="{TemplateBinding BorderThickness}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                              Content="{TemplateBinding Content}"
+                              Padding="{TemplateBinding Padding}"
+                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}" />
+
+          </Panel>
+        </Panel>
+      </Panel>
+    </ControlTemplate>
+  </Setter>
+  <Setter Property="Background">
+    <DynamicResource ResourceKey="ThemeBackgroundBrush" />
+  </Setter>
+
+  <Setter Property="Padding" Value="0 0 0 6" />
+</Style>

@@ -1,0 +1,267 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:SS14.Launcher.ViewModels"
+             xmlns:v="clr-namespace:SS14.Launcher.Views"
+             xmlns:loc="clr-namespace:SS14.Launcher.Localization"
+             xmlns:mainWindowTabs="clr-namespace:SS14.Launcher.ViewModels.MainWindowTabs"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="SS14.Launcher.Views.MainWindowContent">
+  <Design.DataContext>
+    <vm:MainWindowViewModel />
+  </Design.DataContext>
+
+  <UserControl.Styles>
+    <Style Selector="Border.launcher-update-card">
+      <Setter Property="Background" Value="{DynamicResource ThemePopupBackgroundColor}" />
+      <Setter Property="BorderBrush" Value="#607A91A8" />
+      <Setter Property="BorderThickness" Value="1.5" />
+      <Setter Property="CornerRadius" Value="16" />
+      <Setter Property="Padding" Value="16" />
+      <Setter Property="MinWidth" Value="620" />
+      <Setter Property="MaxWidth" Value="860" />
+    </Style>
+
+    <Style Selector="Border.launcher-update-hero">
+      <Setter Property="Background" Value="#2A3E6C45" />
+      <Setter Property="BorderBrush" Value="#7A8E94B8" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Padding" Value="12,10" />
+    </Style>
+
+    <Style Selector="Border.launcher-update-section">
+      <Setter Property="Background" Value="#20000000" />
+      <Setter Property="BorderBrush" Value="#406B6F8F" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="12" />
+    </Style>
+
+    <Style Selector="Border.launcher-update-channel">
+      <Setter Property="Padding" Value="10,3" />
+      <Setter Property="CornerRadius" Value="10" />
+    </Style>
+  </UserControl.Styles>
+
+  <Panel>
+    <DockPanel LastChildFill="true">
+      <!-- Header -->
+      <Panel DockPanel.Dock="Top">
+        <Panel.Background>
+          <DynamicResource ResourceKey="ThemeBackgroundBrush" />
+        </Panel.Background>
+
+        <DockPanel Name="HeaderPanel" Classes="MainWindowHeader">
+          <!-- Logo -->
+          <Image DockPanel.Dock="Left" HorizontalAlignment="Left" Height="60" Margin="0, 0, 0, 8"
+                 Source="{DynamicResource LogoLong}" />
+          <!--<v:Logo DockPanel.Dock="Left" Height="60" HorizontalAlignment="Left" Margin="0, 8"></v:Logo>-->
+          <Grid DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"
+                ColumnDefinitions="Auto, Auto" RowDefinitions="Auto, Auto" Margin="0, 0, 3, 0">
+            <!-- Discord link -->
+            <Button Grid.Row="0" Grid.Column="0" MinWidth="90"
+                    Command="{Binding OnDiscordButtonPressed}" Classes="OpenBoth"
+                    Margin="0, 6, 2, 2">
+              <v:IconLabel Icon="{DynamicResource InfoIcon-discord}"
+                           Content="{loc:Loc main-window-header-link-discord}" />
+            </Button>
+
+            <!-- Website link -->
+            <Button Grid.Row="0" Grid.Column="1" MinWidth="90"
+                    Command="{Binding OnWebsiteButtonPressed}" Classes="OpenLeft"
+                    Margin="0, 6, 0, 2">
+              <v:IconLabel Icon="{DynamicResource InfoIcon-web}" Content="{loc:Loc main-window-header-link-website}" />
+            </Button>
+
+            <!-- Account drop down -->
+            <v:AccountDropDown Grid.ColumnSpan="2" Grid.Row="1"
+                               IsEnabled="{Binding $parent.DataContext.AccountDropDownVisible}"
+                               DataContext="{Binding AccountDropDown}" />
+          </Grid>
+        </DockPanel>
+      </Panel>
+      <Panel DockPanel.Dock="Top" Classes="GoldLineHorizontal" />
+      <Grid>
+        <!-- Main tabbed layout when logged in -->
+        <TabControl IsVisible="{Binding LoggedIn}" ItemsSource="{Binding Tabs}" TabStripPlacement="Bottom"
+                    SelectedIndex="{Binding SelectedIndex,Mode=TwoWay}" Margin="0 4 0 0">
+          <TabControl.ItemTemplate>
+            <DataTemplate DataType="mainWindowTabs:MainWindowTabViewModel">
+              <TextBlock Text="{Binding Name}" />
+            </DataTemplate>
+          </TabControl.ItemTemplate>
+        </TabControl>
+        <!-- Login interface when not logged in -->
+        <v:MainWindowLogin
+          IsVisible="{Binding !$parent.DataContext.LoggedIn}"
+          DataContext="{Binding LoginViewModel}" />
+      </Grid>
+    </DockPanel>
+
+    <ContentControl Classes="OverlayBox"
+                    IsVisible="{Binding LoginViewModel.Screen.OverlayControl, Converter={x:Static ObjectConverters.IsNotNull}}">
+      <ContentControl Content="{Binding LoginViewModel.Screen.OverlayControl}" />
+    </ContentControl>
+
+    <ContentControl Classes="OverlayBox" IsVisible="{Binding LoginViewModel.Screen.Busy}">
+      <StackPanel Orientation="Vertical" VerticalAlignment="Center">
+        <Viewbox Classes="DungSpinnerBox">
+          <!-- Explicitly setting visible to block animations -->
+          <v:DungSpinner IsVisible="{Binding LoginViewModel.Screen.Busy}" />
+        </Viewbox>
+        <TextBlock Text="{Binding LoginViewModel.Screen.BusyText}" HorizontalAlignment="Center" />
+      </StackPanel>
+    </ContentControl>
+
+    <ContentControl Classes="OverlayBox"
+                    IsVisible="{Binding OverlayViewModel, Converter={x:Static ObjectConverters.IsNotNull}}">
+      <ContentControl Content="{Binding OverlayViewModel}" />
+    </ContentControl>
+
+    <ContentControl Classes="OverlayBox" IsVisible="{Binding BusyTask,Converter={x:Static ObjectConverters.IsNotNull}}">
+      <StackPanel Orientation="Vertical">
+        <Viewbox Classes="DungSpinnerBox">
+          <!-- Explicitly setting visible to block animations -->
+          <v:DungSpinner DockPanel.Dock="Top" IsVisible="{Binding BusyTask,Converter={x:Static ObjectConverters.IsNotNull}}" />
+        </Viewbox>
+        <TextBlock Text="{Binding BusyTask}" HorizontalAlignment="Center" />
+      </StackPanel>
+    </ContentControl>
+
+    <ContentControl Classes="OverlayBox"
+                    Background="Transparent"
+                    BorderBrush="Transparent"
+                    IsVisible="{Binding LauncherUpdateAvailable}">
+      <Border Classes="launcher-update-card">
+        <StackPanel Orientation="Vertical" Spacing="10">
+          <Border Classes="launcher-update-hero">
+            <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Row="0"
+                         Grid.Column="0"
+                         Classes="NanoHeadingMedium"
+                         FontWeight="SemiBold"
+                         Margin="0,0,8,4"
+                         Text="{loc:Loc launcher-update-overlay-title}" />
+              <Border Grid.Row="0"
+                      Grid.Column="1"
+                      Classes="launcher-update-channel"
+                      Background="{Binding LauncherUpdateChannelBadgeBackground}"
+                      Margin="0,0,0,4"
+                      IsVisible="{Binding LauncherUpdateChannelText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="{Binding LauncherUpdateChannelText}"
+                           FontSize="10"
+                           FontWeight="SemiBold"
+                           Foreground="{Binding LauncherUpdateChannelBadgeForeground}" />
+              </Border>
+              <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Text="{Binding LauncherUpdateVersionLine}" Opacity="0.85" />
+            </Grid>
+          </Border>
+
+          <Border Classes="launcher-update-section"
+                  IsVisible="{Binding LauncherUpdateNotes, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <StackPanel Spacing="6">
+              <TextBlock Text="{loc:Loc launcher-update-overlay-notes}" FontWeight="SemiBold" />
+              <ScrollViewer MaxHeight="280" HorizontalScrollBarVisibility="Disabled">
+                <TextBlock Text="{Binding LauncherUpdateNotes}" TextWrapping="Wrap" />
+              </ScrollViewer>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="launcher-update-section"
+                  IsVisible="{Binding LauncherUpdateError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <TextBlock Text="{Binding LauncherUpdateError}" TextWrapping="Wrap" Foreground="#FF8A8A" />
+          </Border>
+
+          <Border Classes="launcher-update-section" IsVisible="{Binding LauncherUpdateInProgress}">
+            <StackPanel Spacing="6">
+              <ProgressBar Minimum="0" Maximum="1" Value="{Binding LauncherUpdateProgress}" />
+              <TextBlock Text="{Binding LauncherUpdateProgressText}" Opacity="0.85" />
+            </StackPanel>
+          </Border>
+
+          <DockPanel LastChildFill="False" IsVisible="{Binding !LauncherUpdateInProgress}">
+            <Button DockPanel.Dock="Left"
+                    Content="{loc:Loc launcher-update-overlay-skip}"
+                    Command="{Binding SkipLauncherUpdatePressed}" />
+            <Button DockPanel.Dock="Right"
+                    IsVisible="{Binding LauncherUpdateInstallSupported}"
+                    Content="{loc:Loc launcher-update-overlay-install}"
+                    Command="{Binding InstallLauncherUpdatePressed}" />
+            <Button DockPanel.Dock="Right"
+                    IsVisible="{Binding !LauncherUpdateInstallSupported}"
+                    Content="{loc:Loc launcher-update-overlay-open-release}"
+                    Command="{Binding OpenLauncherUpdatePagePressed}" />
+          </DockPanel>
+        </StackPanel>
+      </Border>
+    </ContentControl>
+
+    <ContentControl Classes="OverlayBox" IsVisible="{Binding OutOfDate}">
+      <StackPanel Orientation="Vertical">
+        <TextBlock HorizontalAlignment="Center" Classes="NanoHeadingMedium" Text="{loc:Loc main-window-out-of-date}" />
+        <TextBlock Margin="0, 10" TextAlignment="Center"
+                   Text="{loc:Loc main-window-out-of-date-desc}" />
+        <DockPanel LastChildFill="False">
+          <Button DockPanel.Dock="Right" Content="{loc:Loc main-window-out-of-date-exit}"
+                  Command="{Binding ExitPressed}" />
+          <Button DockPanel.Dock="Left" Content="{loc:Loc main-window-out-of-date-download-manual}"
+                  Command="{Binding DownloadPressed}" />
+        </DockPanel>
+      </StackPanel>
+    </ContentControl>
+
+    <!-- Yes I realize the absurdity of having literally 5 of these error overlay controls defined get off my back. -->
+
+    <ContentControl Classes="OverlayBox" IsVisible="{Binding !HasDismissedEarlyAccessWarning.Value}">
+      <StackPanel Orientation="Vertical">
+        <TextBlock HorizontalAlignment="Center" Classes="NanoHeadingMedium"
+                   Text="{loc:Loc main-window-early-access-title}" />
+        <TextBlock Margin="0, 10" TextAlignment="Center" MaxWidth="450" TextWrapping="Wrap"
+                   Text="{loc:Loc main-window-early-access-desc}" />
+        <Button Content="{loc:Loc main-window-early-access-accept}" Command="{Binding DismissEarlyAccessPressed}"
+                HorizontalAlignment="Center" />
+      </StackPanel>
+    </ContentControl>
+
+    <ContentControl Classes="OverlayBox" IsVisible="{Binding ShouldShowIntelDegradationWarning}">
+      <StackPanel Orientation="Vertical">
+        <TextBlock HorizontalAlignment="Center" Classes="NanoHeadingMedium"
+                   Text="{loc:Loc main-window-intel-degrade-title}" />
+        <TextBlock Margin="0, 10" TextAlignment="Center" MaxWidth="450" TextWrapping="Wrap"
+                   Text="{loc:Loc main-window-intel-degrade-desc}" />
+        <Button Content="{loc:Loc main-window-intel-degrade-accept}" Command="{Binding DismissIntelDegradationPressed}"
+                HorizontalAlignment="Center" />
+      </StackPanel>
+    </ContentControl>
+
+    <ContentControl Classes="OverlayBox" IsVisible="{Binding ShouldShowRosettaWarning}">
+      <StackPanel Orientation="Vertical">
+        <TextBlock HorizontalAlignment="Center" Classes="NanoHeadingMedium"
+                   Text="{loc:Loc main-window-rosetta-title}" />
+        <TextBlock Margin="0, 10" TextAlignment="Center" MaxWidth="450" TextWrapping="Wrap"
+                   Text="{loc:Loc main-window-rosetta-desc}" />
+        <Button Content="{loc:Loc main-window-rosetta-accept}" Command="{Binding DismissAppleSiliconRosettaPressed}"
+                HorizontalAlignment="Center" />
+      </StackPanel>
+    </ContentControl>
+
+    <!--
+      Literally just keep piling them on it doesn't matter.
+      This is way easier than coming up with some horribly over-engineered solution.
+      -->
+
+    <v:ConnectingOverlay DataContext="{Binding ConnectingVM}"
+                         IsVisible="{Binding $parent.DataContext.ConnectingVM, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+    <v:AngleBox HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+
+    <ContentControl Classes="OverlayBox" Name="DragDropOverlay" IsVisible="False">
+      <TextBlock Text="{loc:Loc main-window-drag-drop-prompt}" />
+    </ContentControl>
+
+    <TextBlock Text="{Binding Version}" HorizontalAlignment="Right"
+               VerticalAlignment="Bottom" Classes="SubText" Margin="6"/>
+  </Panel>
+</UserControl>

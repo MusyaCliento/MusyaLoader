@@ -1,0 +1,64 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mainWindowTabs="clr-namespace:SS14.Launcher.ViewModels.MainWindowTabs"
+             xmlns:loc="clr-namespace:SS14.Launcher.Localization"
+             xmlns:v="clr-namespace:SS14.Launcher.Views"
+             xmlns:mwt="clr-namespace:SS14.Launcher.Views.MainWindowTabs"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="SS14.Launcher.Views.MainWindowTabs.HomePageView">
+  <Design.DataContext>
+    <mainWindowTabs:HomePageViewModel />
+  </Design.DataContext>
+
+  <DockPanel>
+    <!-- Header controls -->
+    <DockPanel DockPanel.Dock="Top" LastChildFill="False" Margin="4, 0, 4, 2">
+      <TextBlock DockPanel.Dock="Left" Text="{loc:Loc tab-home-favorite-servers}" Classes="NanoHeadingMedium" />
+      <Button DockPanel.Dock="Right" Classes="OpenLeft" Command="{Binding AddFavoritePressed}"
+              ToolTip.Tip="{loc:Loc tab-home-add-favorite}">
+        <v:IconLabel Icon="{DynamicResource ButtonIcon-plus}" Height="20" Width="20" />
+      </Button>
+      <Button DockPanel.Dock="Right" Classes="OpenRight" Command="{Binding RefreshPressed}"
+              ToolTip.Tip="{loc:Loc tab-home-refresh}">
+        <v:IconLabel Icon="{DynamicResource ButtonIcon-refresh}" Height="20" Width="20" />
+      </Button>
+    </DockPanel>
+
+    <!-- Footer controls -->
+    <DockPanel DockPanel.Dock="Bottom" LastChildFill="False" Margin="4 4 4 0" Height="32">
+      <Button DockPanel.Dock="Left" Classes="OpenRight"
+              Content="{loc:Loc tab-home-direct-connect}"
+              Command="{Binding DirectConnectPressed}" />
+      <Button DockPanel.Dock="Left" Classes="OpenLeft"
+              Content="{loc:Loc tab-home-run-content-bundle}"
+              Click="OpenReplayClicked" />
+      <CheckBox DockPanel.Dock="Right" VerticalAlignment="Center" Margin="4" IsChecked="{Binding DumpAssemblies}" Content="{loc:Loc marsey-Dump-Resources}" />
+    </DockPanel>
+
+    <Panel DockPanel.Dock="Bottom" Classes="ScrollViewerSep" />
+    <Panel DockPanel.Dock="Top" Classes="ScrollViewerSep" />
+    <Panel>
+      <mwt:ServerList List="{Binding Favorites}"
+                      ShowRoundTimeColumn="{Binding ShowRoundTimeColumn}"
+                      ShowPlayerCountColumn="{Binding ShowPlayerCountColumn}"
+                      ShowMapColumn="{Binding ShowMapColumn}"
+                      ShowModeColumn="{Binding ShowModeColumn}"
+                      ShowPingColumn="{Binding ShowPingColumn}"
+                      IsVisible="{Binding !FavoritesEmpty}">
+        <Button Content="{loc:Loc tab-home-go-to-servers-tab}"
+                Command="{Binding MainWindowViewModel.SelectTabServers}" />
+      </mwt:ServerList>
+
+      <StackPanel IsVisible="{Binding FavoritesEmpty}"
+                  Orientation="Vertical" VerticalAlignment="Center">
+        <TextBlock Text="{loc:Loc tab-home-favorites-guide}" HorizontalAlignment="Center"
+                   Margin="0 0 0 10" />
+        <Button Content="{loc:Loc tab-home-go-to-servers-tab}"
+                Command="{Binding MainWindowViewModel.SelectTabServers}"
+                HorizontalAlignment="Center" />
+      </StackPanel>
+    </Panel>
+  </DockPanel>
+</UserControl>

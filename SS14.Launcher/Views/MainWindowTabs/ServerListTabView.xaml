@@ -1,0 +1,72 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:mainWindowTabs="clr-namespace:SS14.Launcher.ViewModels.MainWindowTabs"
+             xmlns:mainWindowTabsViews="clr-namespace:SS14.Launcher.Views.MainWindowTabs"
+             xmlns:loc="clr-namespace:SS14.Launcher.Localization"
+             xmlns:views="clr-namespace:SS14.Launcher.Views"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="SS14.Launcher.Views.MainWindowTabs.ServerListTabView">
+  <Design.DataContext>
+    <mainWindowTabs:ServerListTabViewModel />
+  </Design.DataContext>
+
+  <UserControl.Styles>
+    <Style Selector=":is(mainWindowTabsViews|ServerList).filtersClosed">
+      <Setter Property="Grid.RowSpan" Value="3"></Setter>
+    </Style>
+  </UserControl.Styles>
+
+  <DockPanel LastChildFill="True">
+    <DockPanel DockPanel.Dock="Bottom" Margin="4 4 4 0" Height="32">
+      <Button DockPanel.Dock="Right" Command="{Binding RefreshPressed}"
+              Classes="OpenLeft" ToolTip.Tip="{loc:Loc tab-servers-refresh}">
+        <views:IconLabel Icon="{DynamicResource ButtonIcon-refresh}" Height="20" Width="20" />
+      </Button>
+      <ToggleButton DockPanel.Dock="Right" IsChecked="{Binding FiltersVisible}" Classes="OpenRight"
+                    Content="{Binding Filters.FiltersText}" />
+      <TextBox DockPanel.Dock="Right" Text="{Binding SearchString, Mode=TwoWay}"
+               Watermark="{loc:Loc tab-servers-search-watermark}"
+               UseFloatingWatermark="False"
+               Margin="0 0 8 0" />
+    </DockPanel>
+
+    <Panel DockPanel.Dock="Bottom" Classes="ScrollViewerSep" />
+
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="*" MinHeight="180" /> <!-- Server List -->
+        <RowDefinition Height="4" /> <!-- Grabber -->
+        <RowDefinition MinHeight="150" /> <!-- Filters Pane -->
+      </Grid.RowDefinitions>
+
+      <!-- Main server list table -->
+      <mainWindowTabsViews:ServerList Grid.Row="0" DockPanel.Dock="Top" List="{Binding SearchedServers}"
+                                      ListText="{Binding ListText}"
+                                      SpinnerVisible="{Binding SpinnerVisible}"
+                                      ShowRoundTimeColumn="{Binding ShowRoundTimeColumn}"
+                                      ShowPlayerCountColumn="{Binding ShowPlayerCountColumn}"
+                                      ShowMapColumn="{Binding ShowMapColumn}"
+                                      ShowModeColumn="{Binding ShowModeColumn}"
+                                      ShowPingColumn="{Binding ShowPingColumn}"
+                                      ShowHeader="True"
+                                      Classes.filtersClosed="{Binding !FiltersVisible}" />
+
+      <GridSplitter Grid.Row="1" BorderThickness="0"
+                    HorizontalAlignment="Stretch"
+                    ResizeDirection="Rows"
+                    IsVisible="{Binding FiltersVisible}">
+      </GridSplitter>
+
+      <!-- Filters dialog -->
+      <Border Grid.Row="2" DockPanel.Dock="Bottom"
+              IsVisible="{Binding FiltersVisible}"
+              BoxShadow="0 -2 4 Black">
+        <Panel Background="{DynamicResource ThemeBackgroundBrush}">
+          <mainWindowTabsViews:ServerListFiltersView DataContext="{Binding Filters}" />
+        </Panel>
+      </Border>
+    </Grid>
+  </DockPanel>
+</UserControl>
