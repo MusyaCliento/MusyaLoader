@@ -247,7 +247,7 @@ public partial class Connector : ReactiveObject
         _acceptPrivacyPolicyTcs = null;
         PrivacyPolicyDifferentVersion = default;
 
-        if (!_udpRelayIndependent && _udpRelayProcess is { HasExited: false })
+        if (_udpRelayProcess is { HasExited: false })
         {
             try
             {
@@ -964,7 +964,7 @@ public partial class Connector : ReactiveObject
         var localPort = GetFreeUdpPort();
 
         var proxyDebug = _cfg.GetCVar(CVars.LauncherProxyServiceDebug);
-        var independentRelay = _cfg.GetCVar(CVars.LauncherProxyServiceIndependent);
+        var independentRelay = false;
         var showProxyConsole = proxyDebug && OperatingSystem.IsWindows();
 
         var psi = new ProcessStartInfo
@@ -1298,3 +1298,4 @@ public enum PrivacyPolicyAcceptResult
     Denied,
     Accepted,
 }
+

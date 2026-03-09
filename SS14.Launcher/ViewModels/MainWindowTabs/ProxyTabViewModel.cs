@@ -61,7 +61,7 @@ public sealed class ProxyTabViewModel : MainWindowTabViewModel
         {
             _cfg.SetCVar(CVars.LauncherProxyApplyToLoader, value);
             _cfg.SetCVar(CVars.LauncherProxyUseUdpRelay, value);
-            _cfg.SetCVar(CVars.LauncherProxyServiceIndependent, true);
+            _cfg.SetCVar(CVars.LauncherProxyServiceIndependent, false);
             _cfg.CommitConfig();
             OnPropertyChanged(nameof(ProxyGameEnabled));
         }
@@ -522,3 +522,4 @@ public sealed class ProxyTabViewModel : MainWindowTabViewModel
         string Username,
         string Password);
 }
+

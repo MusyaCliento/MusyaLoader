@@ -688,7 +688,7 @@ marsey-Backports-Desc = Применить исправления актуаль
 marsey-Disable-Global-Backports = Отключить глобальные обратные порты
 marsey-Disable-Global-Backports-Desc = Отключить доступные обратные порты, предназначенные для любой версии движка.
 
-marsey-Resource-Packs = Пакеты ресурсов
+marsey-Resource-Packs = Ресурс Паки
 marsey-Resource-Override = Строгое переопределение пакета ресурсов
 marsey-Resource-Override-Desc = [DEV] Отключает проверку целевого форка пакета ресурсов.
 
@@ -707,7 +707,7 @@ marsey-Set-Username = Установить имя пользователя
 ## Marsey Patches Tab
 marsey-Patches-Tab = Патчи
 marsey-Header-Patches = Патчи
-marsey-Header-ResourcePacks = Пакеты ресурсов
+marsey-Header-ResourcePacks = Ресурс Паки
 
 marsey-Enabled = Включенно
 marsey-Disabled = Отключенно

@@ -1143,7 +1143,7 @@ public class OptionsTabViewModel : MainWindowTabViewModel, INotifyPropertyChange
         set
         {
             Cfg.SetCVar(CVars.LauncherProxyUseUdpRelay, value);
-            Cfg.SetCVar(CVars.LauncherProxyServiceIndependent, true);
+            Cfg.SetCVar(CVars.LauncherProxyServiceIndependent, false);
             Cfg.CommitConfig();
             ResetProxyRuntimeState();
         }
@@ -1459,5 +1459,6 @@ public class ThemeDescriptionConverter : IValueConverter
         return value;
     }
 }
+
 
 
