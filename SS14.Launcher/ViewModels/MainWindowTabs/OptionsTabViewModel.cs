@@ -107,7 +107,7 @@ public class OptionsTabViewModel : MainWindowTabViewModel, INotifyPropertyChange
 
     private readonly List<LauncherReleaseEntry> _launcherAvailableVersionsAll = new();
 
-    
+
 
 
 
@@ -736,15 +736,61 @@ public class OptionsTabViewModel : MainWindowTabViewModel, INotifyPropertyChange
 
     private void SetTempHwid()
     {
+        PrepareHwidForLaunch();
+
         if (!LIHWIDBind)
         {
             _hwidString = Cfg.GetCVar(CVars.ForcedHWId);
             return;
         }
-
-        _hwidString = _loginManager.ActiveAccount != null ? _loginManager.ActiveAccount.LoginInfo.HWID : "";
+        _hwidString = _loginManager.ActiveAccount != null ? _loginManager.ActiveAccount.LoginInfo.ModernHWId : "";
     }
+    public void PrepareHwidForLaunch()
+    {
+        var account = _loginManager.ActiveAccount;
+        if (account == null) return;
 
+        bool changed = false;
+
+        if (string.IsNullOrEmpty(account.LoginInfo.ModernHWId))
+        {
+            account.LoginInfo.ModernHWId = HWID.GenerateRandom();
+            changed = true;
+        }
+        if (string.IsNullOrEmpty(account.LoginInfo.LegacyHWId))
+        {
+            string newHwid = HWID.GenerateRandom();
+            account.LoginInfo.LegacyHWId = newHwid;
+            _dataManager.ChangeLogin(ChangeReason.Update, account.LoginInfo);
+            _dataManager.CommitConfig();
+
+            Log.Information("Bound new Legacy HWID to account {User}: {Hwid}", account.Username, newHwid);
+        }
+
+        if (changed)
+        {
+            _dataManager.ChangeLogin(ChangeReason.Update, account.LoginInfo);
+            _dataManager.CommitConfig();
+            Log.Information("Generated new unique HWIDs for account {User}", account.Username);
+        }
+
+        if (LIHWIDBind)
+        {
+            HWID.SetAll(
+                account.LoginInfo.ModernHWId,
+                account.LoginInfo.LegacyHWId,
+                account.LoginInfo.UserId.ToString()
+            );
+        }
+        else
+        {
+            HWID.SetAll(
+                Cfg.GetCVar(CVars.ForcedHWId),
+                Cfg.GetCVar(CVars.ForcedHWId),
+                account.LoginInfo.UserId.ToString()
+            );
+        }
+    }
     private void SetTempGuestUsername()
     {
         _guestUname = Cfg.GetCVar(CVars.GuestUsername);
@@ -1201,7 +1247,7 @@ public class OptionsTabViewModel : MainWindowTabViewModel, INotifyPropertyChange
             ApplyLauncherVersionFilter();
         }
     }
-    
+
     public new event PropertyChangedEventHandler? PropertyChanged;
 
     private async Task RefreshLauncherVersionsAsync()

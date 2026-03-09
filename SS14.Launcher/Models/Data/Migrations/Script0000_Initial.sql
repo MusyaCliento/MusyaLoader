@@ -1,8 +1,10 @@
 ﻿CREATE TABLE Login (
-    UserId TEXT PRIMARY KEY NOT NULL, -- GUID
+    UserId TEXT PRIMARY KEY NOT NULL,
     UserName TEXT NOT NULL,
     Token TEXT NOT NULL,
-    Expires DATETIME NOT NULL
+    Expires DATETIME NOT NULL,
+    ModernHWId TEXT,
+    LegacyHWId TEXT
 );
 
 CREATE TABLE Config (

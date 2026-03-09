@@ -829,7 +829,9 @@ public partial class Connector : ReactiveObject
             { "MARSEY_FAKE_PRESENCE", _cfg.GetCVar(CVars.FakeRPC) ? "true" : null },
             { "MARSEY_PRESENCE_USERNAME", _cfg.GetCVar(CVars.RPCUsername) },
             { "MARSEY_FORCINGHWID", _cfg.GetCVar(CVars.ForcingHWId) ? "true" : null },
-            { "MARSEY_FORCEDHWID", _cfg.GetCVar(CVars.ForcingHWId) ? MarseyGetHWID() : null },
+            { "MARSEY_FORCEDHWID", _cfg.GetCVar(CVars.ForcingHWId) ? MarseyGetHWId() : null },
+            { "MARSEY_FORCEDHWID_LEGACY", _cfg.GetCVar(CVars.ForcingHWId) ? MarseyGetLegacyHWId() : null },
+            { "MARSEY_FLYI", _cfg.GetCVar(CVars.ForcingHWId) ? MarseyGetFlYi() : null },
             { "MARSEY_AUTODELETE_HWID", _cfg.GetCVar(CVars.AutoDeleteHWID) ? "true" : null },
             { "MARSEY_FORKID", _forkid },
             { "MARSEY_ENGINE", _engine },
@@ -846,18 +848,36 @@ public partial class Connector : ReactiveObject
         await SendConfig(serializedEnvVars);
     }
 
+    private string MarseyGetFlYi()
+    {
+        if (_loginManager.ActiveAccount != null)
+        {
+            return _loginManager.ActiveAccount.LoginInfo.UserId.ToString();
+        }
+        return string.Empty;
+    }
+
     private async Task SendConfig(string config)
     {
         Server MarseyConfPipeServer = new Server();
         await MarseyConfPipeServer.ReadySend("MarseyConf", config);
     }
 
-    private string MarseyGetHWID()
+    private string MarseyGetLegacyHWId()
+    {
+        if (_cfg.GetCVar(CVars.LIHWIDBind) && _loginManager.ActiveAccount != null)
+        {
+            return _loginManager.ActiveAccount.LoginInfo.LegacyHWId;
+        }
+        return HWID.GenerateRandom();
+    }
+
+    private string MarseyGetHWId()
     {
         string forcedHWID = _cfg.GetCVar(CVars.ForcedHWId);
-        if (_cfg.GetCVar(CVars.LIHWIDBind))
+        if (_cfg.GetCVar(CVars.LIHWIDBind) && _loginManager.ActiveAccount != null)
         {
-            forcedHWID = _loginManager.ActiveAccount!.LoginInfo.HWID;
+            forcedHWID = _loginManager.ActiveAccount.LoginInfo.ModernHWId;
         }
 
         Log.Debug($"Exiting with {forcedHWID}");

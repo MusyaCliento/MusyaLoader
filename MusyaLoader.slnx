@@ -1,0 +1,55 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/MSBuild/">
+    <File Path="MSBuild/Robust.Trimming.targets" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path="Directory.Packages.props" />
+    <File Path="Launcher.props" />
+    <File Path="LICENSE.txt" />
+    <File Path="Readme.md" />
+  </Folder>
+  <Folder Name="/Solution Items/Build Scripts/">
+    <File Path="download_net_runtime.py" />
+    <File Path="exe_set_subsystem.py" />
+      <File Path="publish.py" />
+  </Folder>
+  <Folder Name="/Solution Items/Workflows/">
+    <File Path=".github/workflows/build-test.yml" />
+    <File Path=".github/workflows/publish-release.yml" />
+  </Folder>
+  <Project Path="Marsey.Tests/Marsey.Tests.csproj">
+    <BuildType Solution="*|x64" Project="?" />
+    <BuildType Solution="*|x86" Project="?" />
+    <BuildType Solution="Release|Any CPU" Project="?" />
+    <Platform Solution="*|x64" Project="?" />
+    <Platform Solution="*|x86" Project="?" />
+    <Platform Solution="Release|Any CPU" Project="?" />
+    <Build Solution="*|x64" Project="false" />
+    <Build Solution="*|x86" Project="false" />
+    <Build Solution="Release|Any CPU" Project="false" />
+  </Project>
+  <Project Path="Marsey/Marsey.csproj">
+    <BuildType Solution="*|x64" Project="?" />
+    <BuildType Solution="*|x86" Project="?" />
+    <BuildType Solution="Release|Any CPU" Project="?" />
+    <Platform Solution="*|x64" Project="?" />
+    <Platform Solution="*|x86" Project="?" />
+    <Platform Solution="Release|Any CPU" Project="?" />
+    <Build Solution="*|x64" Project="false" />
+    <Build Solution="*|x86" Project="false" />
+    <Build Solution="Release|Any CPU" Project="false" />
+  </Project>
+  <Project Path="Robust.LoaderApi/Robust.LoaderApi/Robust.LoaderApi.csproj" />
+  <Project Path="SS14.Launcher.Bootstrap/SS14.Launcher.Bootstrap.csproj" />
+  <Project Path="SS14.Launcher.Tests/SS14.Launcher.Tests.csproj" />
+  <Project Path="SS14.Launcher/SS14.Launcher.csproj" />
+  <Project Path="SS14.Loader/SS14.Loader.csproj" />
+  <Project Path="SS14.ProxyService/SS14.ProxyService.csproj" />
+  <Project Path="SS14.Updater/SS14.Updater.csproj" />
+</Solution>

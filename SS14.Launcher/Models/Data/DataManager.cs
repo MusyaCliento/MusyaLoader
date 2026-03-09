@@ -62,7 +62,7 @@ public sealed class DataManager : ReactiveObject
 
     private readonly List<DbCommand> _dbCommandQueue = new();
     private readonly SemaphoreSlim _dbWritingSemaphore = new(1);
-    
+
     // Privacy policy IDs accepted along with the last accepted version.
     private readonly Dictionary<string, string> _acceptedPrivacyPolicies = new();
 
@@ -138,7 +138,7 @@ public sealed class DataManager : ReactiveObject
 
     public bool HasCustomHubs => Hubs.Count > 0;
 
-    public bool ActuallyMultiAccounts => 
+    public bool ActuallyMultiAccounts =>
 #if DEBUG
         true;
 #else
@@ -222,7 +222,7 @@ public sealed class DataManager : ReactiveObject
         }
         CommitConfig();
     }
-    
+
     public bool HasAcceptedPrivacyPolicy(string privacyPolicy, [NotNullWhen(true)] out string? version)
     {
         return _acceptedPrivacyPolicies.TryGetValue(privacyPolicy, out version);
@@ -287,7 +287,7 @@ public sealed class DataManager : ReactiveObject
             // Generate a fingerprint and immediately save it to disk.
             //SetCVar(CVars.Fingerprint, Guid.NewGuid().ToString());
         //}
-
+        EnsureHwids();
         CommitConfig();
     }
 
@@ -295,13 +295,15 @@ public sealed class DataManager : ReactiveObject
     {
         // Load logins.
         _logins.AddOrUpdate(
-            sqliteConnection.Query<(Guid id, string name, string token, DateTimeOffset expires)>(
-                    "SELECT UserId, UserName, Token, Expires FROM Login")
+            sqliteConnection.Query<(Guid id, string name, string token, string? modernhwid, string? legacyhwid, DateTimeOffset expires)>(
+                    "SELECT UserId, UserName, Token, ModernHWId, LegacyHWId, Expires FROM Login")
                 .Select(l => new LoginInfo
                 {
                     UserId = l.id,
                     Username = l.name,
-                    Token = new LoginToken(l.token, l.expires)
+                    Token = new LoginToken(l.token, l.expires),
+                    ModernHWId = l.modernhwid ?? "",
+                    LegacyHWId = l.legacyhwid ?? ""
                 }));
 
         // Favorites
@@ -343,8 +345,8 @@ public sealed class DataManager : ReactiveObject
 
         _filters.UnionWith(sqliteConnection.Query<ServerFilter>("SELECT Category, Data FROM ServerFilter"));
         _hubs.AddRange(sqliteConnection.Query<Hub>("SELECT Address,Priority FROM Hub"));
-        
-        /* Закоментированная помоещьная политика 
+
+        /* Закоментированная помоещьная политика
                 foreach (var (identifier, version) in sqliteConnection.Query<(string, string)>(
                      "SELECT Identifier, Version FROM AcceptedPrivacyPolicy"))
         {
@@ -507,23 +509,25 @@ public sealed class DataManager : ReactiveObject
         });
     }
 
-    public void ChangeLogin(ChangeReason reason, LoginInfo login) //Marsey Сделал public
+    public void ChangeLogin(ChangeReason reason, LoginInfo login)
     {
         // Make immutable copy to avoid race condition bugs.
         var data = new
         {
             login.UserId,
             UserName = login.Username,
-            login.Token.Token,
-            Expires = login.Token.ExpireTime
+            Token = login.Token.Token,
+            Expires = login.Token.ExpireTime,
+            login.ModernHWId,
+            login.LegacyHWId
         };
         AddDbCommand(con =>
         {
             con.Execute(reason switch
                 {
-                    ChangeReason.Add => "INSERT INTO Login VALUES (@UserId, @UserName, @Token, @Expires)",
+                    ChangeReason.Add => "INSERT INTO Login (UserId, UserName, Token, Expires, ModernHWId, LegacyHWId) VALUES (@UserId, @UserName, @Token, @Expires, @ModernHWId, @LegacyHWId)",
                     ChangeReason.Update =>
-                        "UPDATE Login SET UserName = @UserName, Token = @Token, Expires = @Expires WHERE UserId = @UserId",
+                        "UPDATE Login SET UserName = @UserName, Token = @Token, Expires = @Expires, ModernHWId = @ModernHWId, LegacyHWId = @LegacyHWId WHERE UserId = @UserId",
                     ChangeReason.Remove => "DELETE FROM Login WHERE UserId = @UserId",
                     _ => throw new ArgumentOutOfRangeException(nameof(reason), reason, null)
                 },
@@ -703,6 +707,37 @@ public sealed class DataManager : ReactiveObject
         public bool Contains(Hub item) => _parent._hubs.Contains(item);
         public int Count => _parent._hubs.Count;
         public bool IsReadOnly => false;
+
+    }
+
+    public void EnsureHwids()
+    {
+        bool anyChanged = false;
+        foreach (var login in _logins.Items)
+        {
+            bool userChanged = false;
+            if (string.IsNullOrEmpty(login.ModernHWId))
+            {
+                login.ModernHWId = Marsey.Game.Patches.HWID.GenerateRandom();
+                userChanged = true;
+            }
+            if (string.IsNullOrEmpty(login.LegacyHWId))
+            {
+                login.LegacyHWId = Marsey.Game.Patches.HWID.GenerateRandom();
+                userChanged = true;
+            }
+
+            if (userChanged)
+            {
+                this.ChangeLogin(ChangeReason.Update, login);
+                Log.Information("Auto-assigned unique HWIDs to {User}", login.Username);
+                anyChanged = true;
+            }
+        }
+        if (anyChanged)
+        {
+            this.CommitConfig();
+        }
     }
 }
 
