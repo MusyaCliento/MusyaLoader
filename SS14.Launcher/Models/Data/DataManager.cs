@@ -55,10 +55,8 @@ public sealed class DataManager : ReactiveObject
 
     private readonly Dictionary<string, CVarEntry> _configEntries = new();
 
-    // TODO: I got lazy and this is a flat list.
-    // This probably results in some bad O(n*m) behavior.
-    // I don't care for now.
     private readonly List<InstalledEngineModule> _modules = new();
+    private readonly HashSet<EngineModuleKey> _moduleLookup = new();
 
     private readonly List<DbCommand> _dbCommandQueue = new();
     private readonly SemaphoreSlim _dbWritingSemaphore = new(1);
@@ -133,6 +131,7 @@ public sealed class DataManager : ReactiveObject
     public IObservableCache<LoginInfo, Guid> Logins => _logins;
     public IObservableCache<InstalledEngineVersion, string> EngineInstallations => _engineInstallations;
     public IEnumerable<InstalledEngineModule> EngineModules => _modules;
+    public bool HasEngineModule(string name, string version) => _moduleLookup.Contains(new EngineModuleKey(name, version));
     public ICollection<ServerFilter> Filters { get; }
     public ICollection<Hub> Hubs { get; }
 
@@ -180,12 +179,18 @@ public sealed class DataManager : ReactiveObject
 
     public void AddEngineModule(InstalledEngineModule module)
     {
+        if (!_moduleLookup.Add(new EngineModuleKey(module.Name, module.Version)))
+            return;
+
         _modules.Add(module);
         AddDbCommand(c => c.Execute("INSERT INTO EngineModule VALUES (@Name, @Version)", module));
     }
 
     public void RemoveEngineModule(InstalledEngineModule module)
     {
+        if (!_moduleLookup.Remove(new EngineModuleKey(module.Name, module.Version)))
+            return;
+
         _modules.Remove(module);
         AddDbCommand(c => c.Execute("DELETE FROM EngineModule WHERE Name = @Name AND Version = @Version", module));
     }
@@ -317,7 +322,12 @@ public sealed class DataManager : ReactiveObject
             sqliteConnection.Query<InstalledEngineVersion>("SELECT Version,Signature FROM EngineInstallation"));
 
         // Engine modules
-        _modules.AddRange(sqliteConnection.Query<InstalledEngineModule>("SELECT Name, Version FROM EngineModule"));
+        var loadedModules = sqliteConnection.Query<InstalledEngineModule>("SELECT Name, Version FROM EngineModule");
+        foreach (var module in loadedModules)
+        {
+            _modules.Add(module);
+            _moduleLookup.Add(new EngineModuleKey(module.Name, module.Version));
+        }
 
         // Load CVars.
         var configRows = sqliteConnection.Query<(string, object?)>("SELECT Key, Value FROM Config");
@@ -615,6 +625,8 @@ public sealed class DataManager : ReactiveObject
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Value)));
         }
     }
+
+    private readonly record struct EngineModuleKey(string Name, string Version);
 
     private sealed class ServerFilterCollection : ICollection<ServerFilter>
     {

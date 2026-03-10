@@ -394,6 +394,7 @@ public partial class Connector : ReactiveObject
         Uri? parsedAddr,
         bool contentBundle)
     {
+        await _loginManager.WaitForTokenRefreshAsync();
 
         var cVars = new List<(string, string)>();
 
@@ -811,7 +812,6 @@ public partial class Connector : ReactiveObject
         MarseyCleanup();
     }
 
-    // TODO: Make this a json or something like holy shit
     private async Task ConfigureMarsey()
     {
         // Prepare environment variables
@@ -843,7 +843,7 @@ public partial class Connector : ReactiveObject
         };
 
         // Serialize environment variables
-        string serializedEnvVars = string.Join(";", envVars.Select(kv => $"{kv.Key}={kv.Value}"));
+        string serializedEnvVars = JsonSerializer.Serialize(envVars);
 
         await SendConfig(serializedEnvVars);
     }
