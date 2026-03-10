@@ -427,6 +427,118 @@
         </ScrollViewer>
       </TabItem>
 
+      <TabItem Header="{loc:Loc launcher-updates-tab-title}">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Margin="12" Spacing="12">
+            <Border Classes="UpdatesHeroCard">
+              <StackPanel Spacing="6">
+                <TextBlock Text="{loc:Loc launcher-updates-header}" Classes="NanoHeadingMedium" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding LauncherVersionsStatus}" Opacity="0.82" FontSize="12" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+
+            <Border Classes="UpdatesSectionCard">
+              <StackPanel Spacing="12">
+                <StackPanel>
+                  <CheckBox IsChecked="{Binding LauncherAutoUpdate}" Content="{loc:Loc launcher-updates-auto}" />
+                  <TextBlock Text="{loc:Loc launcher-updates-auto-desc}" Margin="26,2,0,0" Opacity="0.6" FontSize="11" TextWrapping="Wrap"/>
+                </StackPanel>
+
+                <StackPanel>
+                  <CheckBox IsChecked="{Binding LauncherUpdateNotify}" Content="{loc:Loc launcher-updates-notify}" />
+                  <TextBlock Text="{loc:Loc launcher-updates-notify-desc}" Margin="26,2,0,0" Opacity="0.6" FontSize="11" TextWrapping="Wrap"/>
+                </StackPanel>
+                
+                <StackPanel>
+                  <CheckBox IsChecked="{Binding LauncherUpdateAllowPreRelease}" Content="{loc:Loc launcher-updates-allow-prerelease}" />
+                  <TextBlock Text="{loc:Loc launcher-updates-allow-prerelease-desc}" Margin="26,2,0,0" Opacity="0.6" FontSize="11" TextWrapping="Wrap"/>
+                </StackPanel>
+
+                <StackPanel Spacing="6">
+                  <TextBlock Text="{loc:Loc launcher-updates-repo}" Opacity="0.85" FontSize="12"/>
+                  <TextBox Classes="SettingsInput"
+                           Text="{Binding LauncherUpdateRepo, Mode=TwoWay}"
+                           Watermark="{loc:Loc launcher-updates-repo-placeholder}"/>
+                  <TextBlock Text="{loc:Loc launcher-updates-repo-desc}" Opacity="0.55" FontSize="11" TextWrapping="Wrap"/>
+                </StackPanel>
+
+              </StackPanel>
+            </Border>
+
+            <Border Classes="UpdatesSectionCard">
+              <StackPanel Spacing="8">
+                <DockPanel LastChildFill="False">
+                  <Button DockPanel.Dock="Right" Classes="SettingsButton Compact" Content="{loc:Loc launcher-updates-list-refresh}" Command="{Binding RefreshLauncherVersionsCommand}" />
+                  <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" Margin="0,0,10,0" VerticalAlignment="Center">
+                    <TextBlock Text="{loc:Loc launcher-updates-filter-label}" Opacity="0.75" VerticalAlignment="Center" />
+                    <ComboBox Classes="SettingsCombo"
+                              MinWidth="170"
+                              ItemsSource="{Binding LauncherVersionFilters}"
+                              SelectedItem="{Binding SelectedLauncherVersionFilter}">
+                      <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                          <TextBlock Text="{Binding Text}" />
+                        </DataTemplate>
+                      </ComboBox.ItemTemplate>
+                    </ComboBox>
+                  </StackPanel>
+                  <TextBlock DockPanel.Dock="Left" Text="{loc:Loc launcher-updates-list-title}" Classes="NanoHeadingSmall" FontWeight="SemiBold"/>
+                </DockPanel>
+
+                <ProgressBar IsVisible="{Binding LauncherVersionsLoading}" IsIndeterminate="True" Height="4" />
+
+                <Border CornerRadius="8" ClipToBounds="True">
+                  <ListBox Classes="UpdatesVersionsList"
+                           ItemsSource="{Binding LauncherAvailableVersions}"
+                           SelectedItem="{Binding SelectedLauncherVersion, Mode=TwoWay}"
+                           MaxHeight="260">
+                    <ListBox.ItemTemplate>
+                      <DataTemplate>
+                        <Border Classes="update-version-card"
+                                ToolTip.Tip="{Binding Tooltip}">
+                          <Grid ColumnDefinitions="4,*,Auto" RowDefinitions="Auto,Auto,Auto">
+                            <Border Grid.RowSpan="3" Grid.Column="0" Classes="update-version-indicator" Background="#60575B7F" CornerRadius="4"/>
+
+                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Title}" FontWeight="SemiBold" Margin="10,0,10,0"/>
+                            <Border Grid.Row="0" Grid.Column="2"
+                                    Classes="update-version-channel"
+                                    Background="{Binding ChannelBadgeBackground}">
+                              <TextBlock Text="{Binding ChannelText}"
+                                         FontSize="10"
+                                         FontWeight="SemiBold"
+                                         Foreground="{Binding ChannelBadgeForeground}" />
+                            </Border>
+                            <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding Subtitle}" FontSize="11" Opacity="0.65" Margin="10,2,0,0"/>
+                            <TextBlock Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding NotesPreview}" FontSize="11" Opacity="0.85" Margin="10,4,0,0" TextWrapping="Wrap"/>
+                          </Grid>
+                        </Border>
+                      </DataTemplate>
+                    </ListBox.ItemTemplate>
+                  </ListBox>
+                </Border>
+
+                <DockPanel LastChildFill="False" Margin="0,2,0,0">
+                  <Button DockPanel.Dock="Left"
+                          Classes="SettingsButton Compact"
+                          Content="{loc:Loc launcher-updates-list-open}"
+                          IsEnabled="{Binding CanOpenSelectedLauncherVersion}"
+                          Command="{Binding OpenSelectedLauncherVersionCommand}" />
+                  <Button DockPanel.Dock="Right"
+                          Classes="SettingsButton"
+                          Content="{loc:Loc launcher-updates-list-install-selected}"
+                          IsEnabled="{Binding CanInstallSelectedLauncherVersion}"
+                          Command="{Binding InstallSelectedLauncherVersionCommand}" />
+                </DockPanel>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="{loc:Loc tab-proxy-title}">
+        <tabViews:ProxyTabView DataContext="{Binding ProxyTab}" />
+      </TabItem>
+
       <TabItem Header="{loc:Loc marsey-Header-Logging}">
         <ScrollViewer HorizontalScrollBarVisibility="Disabled">
             <StackPanel Margin="12" Spacing="10">
@@ -591,118 +703,6 @@
     </TabItem>
 
 
-
-      <TabItem Header="{loc:Loc tab-proxy-title}">
-        <tabViews:ProxyTabView DataContext="{Binding ProxyTab}" />
-      </TabItem>
-
-      <TabItem Header="{loc:Loc launcher-updates-tab-title}">
-        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-          <StackPanel Margin="12" Spacing="12">
-            <Border Classes="UpdatesHeroCard">
-              <StackPanel Spacing="6">
-                <TextBlock Text="{loc:Loc launcher-updates-header}" Classes="NanoHeadingMedium" FontWeight="SemiBold" />
-                <TextBlock Text="{Binding LauncherVersionsStatus}" Opacity="0.82" FontSize="12" TextWrapping="Wrap" />
-              </StackPanel>
-            </Border>
-
-            <Border Classes="UpdatesSectionCard">
-              <StackPanel Spacing="12">
-                <StackPanel>
-                  <CheckBox IsChecked="{Binding LauncherAutoUpdate}" Content="{loc:Loc launcher-updates-auto}" />
-                  <TextBlock Text="{loc:Loc launcher-updates-auto-desc}" Margin="26,2,0,0" Opacity="0.6" FontSize="11" TextWrapping="Wrap"/>
-                </StackPanel>
-
-                <StackPanel>
-                  <CheckBox IsChecked="{Binding LauncherUpdateNotify}" Content="{loc:Loc launcher-updates-notify}" />
-                  <TextBlock Text="{loc:Loc launcher-updates-notify-desc}" Margin="26,2,0,0" Opacity="0.6" FontSize="11" TextWrapping="Wrap"/>
-                </StackPanel>
-                
-                <StackPanel>
-                  <CheckBox IsChecked="{Binding LauncherUpdateAllowPreRelease}" Content="{loc:Loc launcher-updates-allow-prerelease}" />
-                  <TextBlock Text="{loc:Loc launcher-updates-allow-prerelease-desc}" Margin="26,2,0,0" Opacity="0.6" FontSize="11" TextWrapping="Wrap"/>
-                </StackPanel>
-
-                <StackPanel Spacing="6">
-                  <TextBlock Text="{loc:Loc launcher-updates-repo}" Opacity="0.85" FontSize="12"/>
-                  <TextBox Classes="SettingsInput"
-                           Text="{Binding LauncherUpdateRepo, Mode=TwoWay}"
-                           Watermark="{loc:Loc launcher-updates-repo-placeholder}"/>
-                  <TextBlock Text="{loc:Loc launcher-updates-repo-desc}" Opacity="0.55" FontSize="11" TextWrapping="Wrap"/>
-                </StackPanel>
-
-              </StackPanel>
-            </Border>
-
-            <Border Classes="UpdatesSectionCard">
-              <StackPanel Spacing="8">
-                <DockPanel LastChildFill="False">
-                  <Button DockPanel.Dock="Right" Classes="SettingsButton Compact" Content="{loc:Loc launcher-updates-list-refresh}" Command="{Binding RefreshLauncherVersionsCommand}" />
-                  <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" Margin="0,0,10,0" VerticalAlignment="Center">
-                    <TextBlock Text="{loc:Loc launcher-updates-filter-label}" Opacity="0.75" VerticalAlignment="Center" />
-                    <ComboBox Classes="SettingsCombo"
-                              MinWidth="170"
-                              ItemsSource="{Binding LauncherVersionFilters}"
-                              SelectedItem="{Binding SelectedLauncherVersionFilter}">
-                      <ComboBox.ItemTemplate>
-                        <DataTemplate>
-                          <TextBlock Text="{Binding Text}" />
-                        </DataTemplate>
-                      </ComboBox.ItemTemplate>
-                    </ComboBox>
-                  </StackPanel>
-                  <TextBlock DockPanel.Dock="Left" Text="{loc:Loc launcher-updates-list-title}" Classes="NanoHeadingSmall" FontWeight="SemiBold"/>
-                </DockPanel>
-
-                <ProgressBar IsVisible="{Binding LauncherVersionsLoading}" IsIndeterminate="True" Height="4" />
-
-                <Border CornerRadius="8" ClipToBounds="True">
-                  <ListBox Classes="UpdatesVersionsList"
-                           ItemsSource="{Binding LauncherAvailableVersions}"
-                           SelectedItem="{Binding SelectedLauncherVersion, Mode=TwoWay}"
-                           MaxHeight="260">
-                    <ListBox.ItemTemplate>
-                      <DataTemplate>
-                        <Border Classes="update-version-card"
-                                ToolTip.Tip="{Binding Tooltip}">
-                          <Grid ColumnDefinitions="4,*,Auto" RowDefinitions="Auto,Auto,Auto">
-                            <Border Grid.RowSpan="3" Grid.Column="0" Classes="update-version-indicator" Background="#60575B7F" CornerRadius="4"/>
-
-                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Title}" FontWeight="SemiBold" Margin="10,0,10,0"/>
-                            <Border Grid.Row="0" Grid.Column="2"
-                                    Classes="update-version-channel"
-                                    Background="{Binding ChannelBadgeBackground}">
-                              <TextBlock Text="{Binding ChannelText}"
-                                         FontSize="10"
-                                         FontWeight="SemiBold"
-                                         Foreground="{Binding ChannelBadgeForeground}" />
-                            </Border>
-                            <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding Subtitle}" FontSize="11" Opacity="0.65" Margin="10,2,0,0"/>
-                            <TextBlock Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding NotesPreview}" FontSize="11" Opacity="0.85" Margin="10,4,0,0" TextWrapping="Wrap"/>
-                          </Grid>
-                        </Border>
-                      </DataTemplate>
-                    </ListBox.ItemTemplate>
-                  </ListBox>
-                </Border>
-
-                <DockPanel LastChildFill="False" Margin="0,2,0,0">
-                  <Button DockPanel.Dock="Left"
-                          Classes="SettingsButton Compact"
-                          Content="{loc:Loc launcher-updates-list-open}"
-                          IsEnabled="{Binding CanOpenSelectedLauncherVersion}"
-                          Command="{Binding OpenSelectedLauncherVersionCommand}" />
-                  <Button DockPanel.Dock="Right"
-                          Classes="SettingsButton"
-                          Content="{loc:Loc launcher-updates-list-install-selected}"
-                          IsEnabled="{Binding CanInstallSelectedLauncherVersion}"
-                          Command="{Binding InstallSelectedLauncherVersionCommand}" />
-                </DockPanel>
-              </StackPanel>
-            </Border>
-          </StackPanel>
-        </ScrollViewer>
-      </TabItem>
 
       <TabItem Header="{loc:Loc tab-development-title}">
         <ScrollViewer HorizontalScrollBarVisibility="Disabled">

@@ -5,40 +5,94 @@
         xmlns:loc="clr-namespace:SS14.Launcher.Localization"
         mc:Ignorable="d" d:DesignWidth="420" d:DesignHeight="260"
         MinWidth="420" MinHeight="240"
-        Width="480" Height="300"
+        Width="480" Height="420"
         x:Class="SS14.Launcher.Views.MainWindowTabs.ProxyProfileDialog"
         Icon="{DynamicResource WindowIcon}"
         Title="{loc:Loc tab-proxy-dialog-title}"
         WindowStartupLocation="CenterOwner">
+  <Window.Styles>
+    <Style Selector="Border.ProxyDialogHero">
+      <Setter Property="Background" Value="#243E6C45" />
+      <Setter Property="BorderBrush" Value="#7A8E94B8" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="12,10" />
+    </Style>
+
+    <Style Selector="Border.ProxyDialogCard">
+      <Setter Property="Background" Value="#17000000" />
+      <Setter Property="BorderBrush" Value="#366B6F8F" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="12" />
+    </Style>
+
+    <Style Selector="TextBox.ProxyInput">
+      <Setter Property="MinHeight" Value="32" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="Button.ProxyDialogButton">
+      <Setter Property="MinWidth" Value="110" />
+      <Setter Property="MinHeight" Value="32" />
+      <Setter Property="Padding" Value="12,6" />
+    </Style>
+  </Window.Styles>
+
   <StackPanel Margin="12" Spacing="10">
-    <TextBlock Text="{loc:Loc tab-proxy-dialog-name}" />
-    <TextBox Name="NameBox" />
-
-    <Grid ColumnDefinitions="*,120">
-      <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,8,0">
-        <TextBlock Text="{loc:Loc tab-proxy-dialog-host}" />
-        <TextBox Name="HostBox" />
+    <Border Classes="ProxyDialogHero">
+      <StackPanel Spacing="4">
+        <TextBlock Text="{loc:Loc tab-proxy-dialog-title}" Classes="NanoHeadingSmall" FontWeight="SemiBold" />
+        <TextBlock Text="SOCKS5" Opacity="0.72" FontSize="11" />
       </StackPanel>
-      <StackPanel Grid.Column="1" Spacing="4">
-        <TextBlock Text="{loc:Loc tab-proxy-dialog-port}" />
-        <TextBox Name="PortBox" />
+    </Border>
+
+    <Border Classes="ProxyDialogCard">
+      <StackPanel Spacing="10">
+        <StackPanel Spacing="4">
+          <TextBlock Text="{loc:Loc tab-proxy-dialog-name}" />
+          <TextBox Name="NameBox" Classes="ProxyInput" />
+        </StackPanel>
+
+        <Grid ColumnDefinitions="*,120">
+          <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,8,0">
+            <TextBlock Text="{loc:Loc tab-proxy-dialog-host}" />
+            <TextBox Name="HostBox" Classes="ProxyInput" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Spacing="4">
+            <TextBlock Text="{loc:Loc tab-proxy-dialog-port}" />
+            <TextBox Name="PortBox" Classes="ProxyInput" />
+          </StackPanel>
+        </Grid>
+
+        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto">
+          <StackPanel Grid.Column="0" Grid.Row="0" Spacing="4" Margin="0,0,8,0">
+            <TextBlock Text="{loc:Loc tab-proxy-dialog-user}" />
+            <TextBox Name="UserBox" Classes="ProxyInput" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Grid.Row="0" Spacing="4">
+            <TextBlock Text="{loc:Loc tab-proxy-dialog-pass}" />
+            <Grid>
+              <TextBox Name="PassHiddenBox" Classes="ProxyInput" PasswordChar="*" />
+              <TextBox Name="PassVisibleBox" Classes="ProxyInput" IsVisible="False" />
+            </Grid>
+          </StackPanel>
+          <CheckBox Grid.Column="1"
+                    Grid.Row="1"
+                    Name="ShowPasswordBox"
+                    Content="{loc:Loc tab-proxy-dialog-show-pass}"
+                    Margin="0,6,0,0"
+                    Checked="ShowPasswordChanged"
+                    Unchecked="ShowPasswordChanged" />
+        </Grid>
+
+        <TextBlock Name="ErrorText" Foreground="#E67676" TextWrapping="Wrap" />
       </StackPanel>
-    </Grid>
+    </Border>
 
-    <Grid ColumnDefinitions="*,*,Auto" RowDefinitions="Auto,Auto">
-      <TextBlock Grid.Column="0" Grid.Row="0" Text="{loc:Loc tab-proxy-dialog-user}" />
-      <TextBlock Grid.Column="1" Grid.Row="0" Text="{loc:Loc tab-proxy-dialog-pass}" Margin="8,0,0,0" />
-      <TextBox Grid.Column="0" Grid.Row="1" Name="UserBox" />
-      <TextBox Grid.Column="1" Grid.Row="1" Name="PassHiddenBox" PasswordChar="*" Margin="8,0,0,0" />
-      <TextBox Grid.Column="1" Grid.Row="1" Name="PassVisibleBox" IsVisible="False" Margin="8,0,0,0" />
-      <CheckBox Grid.Column="2" Grid.Row="1" Name="ShowPasswordBox" Content="{loc:Loc tab-proxy-dialog-show-pass}" VerticalAlignment="Center" Margin="8,0,0,0" Checked="ShowPasswordChanged" Unchecked="ShowPasswordChanged" />
-    </Grid>
-
-    <TextBlock Name="ErrorText" Foreground="#E67676" TextWrapping="Wrap" />
-
-    <DockPanel LastChildFill="False" Margin="0,8,0,0">
-      <Button DockPanel.Dock="Right" Name="SaveButton" Content="{loc:Loc tab-proxy-dialog-save}" Click="SaveClicked" />
-      <Button DockPanel.Dock="Right" Content="{loc:Loc tab-proxy-dialog-cancel}" Click="CancelClicked" Margin="0,0,8,0" />
+    <DockPanel LastChildFill="False">
+      <Button DockPanel.Dock="Right" Classes="ProxyDialogButton" Name="SaveButton" Content="{loc:Loc tab-proxy-dialog-save}" Click="SaveClicked" />
+      <Button DockPanel.Dock="Right" Classes="ProxyDialogButton" Content="{loc:Loc tab-proxy-dialog-cancel}" Click="CancelClicked" Margin="0,0,8,0" />
     </DockPanel>
   </StackPanel>
 </Window>

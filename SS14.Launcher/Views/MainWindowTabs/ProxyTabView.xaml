@@ -10,70 +10,206 @@
     <mainWindowTabs:ProxyTabViewModel />
   </Design.DataContext>
 
+  <UserControl.Styles>
+    <Style Selector="Button.ProxyAction">
+      <Setter Property="MinHeight" Value="28" />
+      <Setter Property="MinWidth" Value="96" />
+      <Setter Property="Padding" Value="10,4" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="FontWeight" Value="Normal" />
+    </Style>
+
+    <Style Selector="Button.ProxyAction.Compact">
+      <Setter Property="MinWidth" Value="84" />
+    </Style>
+
+    <Style Selector="Border.ProxyToggleRow">
+      <Setter Property="Background" Value="#1AFFFFFF" />
+      <Setter Property="BorderBrush" Value="#2D6B6F8F" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="10,8" />
+    </Style>
+
+    <Style Selector="Border.ProxyStatusPill">
+      <Setter Property="Background" Value="#33575B7F" />
+      <Setter Property="CornerRadius" Value="999" />
+      <Setter Property="Padding" Value="8,2" />
+    </Style>
+
+    <Style Selector="Border.ProxyHeroCard">
+      <Setter Property="Background" Value="#223E6C45" />
+      <Setter Property="BorderBrush" Value="#7A8E94B8" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="12,10" />
+    </Style>
+
+    <Style Selector="Border.ProxySectionCard">
+      <Setter Property="Background" Value="#16000000" />
+      <Setter Property="BorderBrush" Value="#3A6B6F8F" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="12" />
+    </Style>
+
+    <Style Selector="ListBox.ProxyProfilesList">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+
+    <Style Selector="ListBox.ProxyProfilesList > ListBoxItem">
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="0,0,0,8" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="ClipToBounds" Value="True" />
+      <Setter Property="CornerRadius" Value="8" />
+    </Style>
+
+    <Style Selector="ListBox.ProxyProfilesList > ListBoxItem:selected">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <Style Selector="ListBox.ProxyProfilesList > ListBoxItem:pointerover">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <Style Selector="ListBox.ProxyProfilesList > ListBoxItem:focus">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <Style Selector="ListBox.ProxyProfilesList > ListBoxItem:selected /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+
+    <Style Selector="Border.proxy-profile-row">
+      <Setter Property="Background" Value="#1AFFFFFF" />
+      <Setter Property="BorderBrush" Value="#33575B7F" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="8,7" />
+    </Style>
+
+    <Style Selector="ListBox.ProxyProfilesList > ListBoxItem:pointerover Border.proxy-profile-row">
+      <Setter Property="Background" Value="#2A575B7F" />
+      <Setter Property="BorderBrush" Value="#AA8E94B8" />
+    </Style>
+
+    <Style Selector="ListBox.ProxyProfilesList > ListBoxItem:selected Border.proxy-profile-row">
+      <Setter Property="Background" Value="#2E3E6C45" />
+      <Setter Property="BorderBrush" Value="#FF8E94B8" />
+      <Setter Property="BorderThickness" Value="2" />
+    </Style>
+  </UserControl.Styles>
+
   <ScrollViewer HorizontalScrollBarVisibility="Disabled">
     <StackPanel Margin="12" Spacing="12">
-      <TextBlock Text="{loc:Loc tab-proxy-header}" Classes="NanoHeadingMedium" FontWeight="SemiBold"/>
-
-      <StackPanel Spacing="8">
-        <CheckBox IsChecked="{Binding ProxyLauncherEnabled}" Content="{loc:Loc tab-proxy-launcher}" />
-        <CheckBox IsChecked="{Binding ProxyUpdatesEnabled}" Content="{loc:Loc tab-proxy-updates}" />
-        <CheckBox IsChecked="{Binding ProxyGuardGameLaunch}" Content="{loc:Loc tab-proxy-guard}" />
-        <StackPanel Spacing="4">
-          <CheckBox IsChecked="{Binding ProxyGameEnabled}" HorizontalAlignment="Left">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Left">
-              <TextBlock Text="{loc:Loc tab-proxy-game}" VerticalAlignment="Center" />
-              <Image Classes="info-icon"
-                     Source="avares://SS14.Launcher/Assets/marsey-icons/info.png"
-                     Width="18"
-                     Height="18"
-                     Margin="8,0,0,0"
-                     VerticalAlignment="Center"
-                     >
-                <ToolTip.Tip>
-                  <TextBlock Text="{loc:Loc tab-proxy-game-info}" MaxWidth="360" TextWrapping="Wrap"/>
-                </ToolTip.Tip>
-              </Image>
-            </StackPanel>
-          </CheckBox>
-          <CheckBox IsChecked="{Binding ProxyServiceDebug}" Content="{loc:Loc tab-proxy-service-debug}" />
+      <Border Classes="ProxyHeroCard">
+        <StackPanel Spacing="8">
+          <DockPanel LastChildFill="False">
+            <TextBlock DockPanel.Dock="Left" Text="{loc:Loc tab-proxy-header}" Classes="NanoHeadingMedium" FontWeight="SemiBold" />
+            <Border DockPanel.Dock="Right" Classes="ProxyStatusPill" IsVisible="{Binding IsTesting}">
+              <TextBlock Text="{loc:Loc proxy-test-running}" FontSize="11" FontWeight="SemiBold" />
+            </Border>
+          </DockPanel>
+          <TextBlock Text="{Binding Status}" Opacity="0.85" FontSize="12" TextWrapping="Wrap"/>
+          <TextBlock IsVisible="{Binding SelectedProfile, Converter={x:Static ObjectConverters.IsNotNull}}"
+                     Text="{Binding SelectedProfile.LastTest}" Opacity="0.72" FontSize="11" TextWrapping="Wrap"/>
         </StackPanel>
-      </StackPanel>
+      </Border>
 
-      <DockPanel LastChildFill="False">
-        <Button DockPanel.Dock="Left" Content="{loc:Loc tab-proxy-add}" Click="AddProfileClicked" Margin="0,0,8,0"/>
-        <Button DockPanel.Dock="Left" Content="{loc:Loc tab-proxy-edit}" Click="EditProfileClicked" IsEnabled="{Binding HasSelection}" Margin="0,0,8,0"/>
-        <Button DockPanel.Dock="Left" Content="{loc:Loc tab-proxy-remove}" Command="{Binding RemoveProfileCommand}" IsEnabled="{Binding HasSelection}" Margin="0,0,8,0"/>
-        <Button DockPanel.Dock="Left" Content="{loc:Loc tab-proxy-save}" Command="{Binding SaveProfilesCommand}" Margin="0,0,16,0"/>
-        <Button DockPanel.Dock="Right" Content="{loc:Loc tab-proxy-test-all}" Command="{Binding TestAllCommand}" IsEnabled="{Binding !IsTesting}" Margin="8,0,0,0"/>
-        <Button DockPanel.Dock="Right" Content="{loc:Loc tab-proxy-test-selected}" Command="{Binding TestSelectedCommand}" IsEnabled="{Binding HasSelection}" />
-      </DockPanel>
+      <Border Classes="ProxySectionCard">
+        <StackPanel Spacing="8">
+          <Border Classes="ProxyToggleRow">
+            <CheckBox IsChecked="{Binding ProxyLauncherEnabled}" Content="{loc:Loc tab-proxy-launcher}" />
+          </Border>
 
-      <Border Background="#15000000" BorderBrush="#33575B7F" BorderThickness="1" CornerRadius="8" Padding="8">
+          <Border Classes="ProxyToggleRow">
+            <CheckBox IsChecked="{Binding ProxyUpdatesEnabled}" Content="{loc:Loc tab-proxy-updates}" />
+          </Border>
+
+          <Border Classes="ProxyToggleRow">
+            <CheckBox IsChecked="{Binding ProxyGuardGameLaunch}" Content="{loc:Loc tab-proxy-guard}" />
+          </Border>
+
+          <Border Classes="ProxyToggleRow">
+            <CheckBox IsChecked="{Binding ProxyGameEnabled}" HorizontalAlignment="Left">
+              <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Left">
+                <TextBlock Text="{loc:Loc tab-proxy-game}" VerticalAlignment="Center" />
+                <Image Classes="info-icon"
+                       Source="avares://SS14.Launcher/Assets/marsey-icons/info.png"
+                       Width="18"
+                       Height="18"
+                       Margin="8,0,0,0"
+                       VerticalAlignment="Center">
+                  <ToolTip.Tip>
+                    <TextBlock Text="{loc:Loc tab-proxy-game-info}" MaxWidth="360" TextWrapping="Wrap"/>
+                  </ToolTip.Tip>
+                </Image>
+              </StackPanel>
+            </CheckBox>
+          </Border>
+
+          <Border Classes="ProxyToggleRow">
+            <CheckBox IsChecked="{Binding ProxyServiceDebug}" Content="{loc:Loc tab-proxy-service-debug}" />
+          </Border>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="ProxySectionCard">
+        <StackPanel Spacing="10">
+          <TextBlock Text="{loc:Loc tab-proxy-header}" FontWeight="SemiBold" Opacity="0.9" />
+          <DockPanel LastChildFill="False" Margin="0,2,0,0">
+            <Button DockPanel.Dock="Left" Classes="ProxyAction Compact" Content="{loc:Loc tab-proxy-add}" Click="AddProfileClicked" Margin="0,0,8,0"/>
+            <Button DockPanel.Dock="Left" Classes="ProxyAction Compact" Content="{loc:Loc tab-proxy-edit}" Click="EditProfileClicked" IsEnabled="{Binding HasSelection}" Margin="0,0,8,0"/>
+            <Button DockPanel.Dock="Left" Classes="ProxyAction Compact" Content="{loc:Loc tab-proxy-remove}" Command="{Binding RemoveProfileCommand}" IsEnabled="{Binding HasSelection}" Margin="0,0,8,0"/>
+            <Button DockPanel.Dock="Left" Classes="ProxyAction Compact" Content="{loc:Loc tab-proxy-save}" Command="{Binding SaveProfilesCommand}" Margin="0,0,12,0"/>
+            <Button DockPanel.Dock="Right" Classes="ProxyAction" Content="{loc:Loc tab-proxy-test-all}" Command="{Binding TestAllCommand}" IsEnabled="{Binding !IsTesting}" Margin="8,0,0,0"/>
+            <Button DockPanel.Dock="Right" Classes="ProxyAction" Content="{loc:Loc tab-proxy-test-selected}" Command="{Binding TestSelectedCommand}" IsEnabled="{Binding HasSelection}" />
+          </DockPanel>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="ProxySectionCard" Padding="8">
         <StackPanel Spacing="6">
-          <Grid ColumnDefinitions="1.4*,0.8*,1.8*,0.9*,0.9*,0.9*" Margin="4,0">
+          <Grid ColumnDefinitions="1.2*,0.8*,0.7*,1.7*,0.9*,0.9*,0.9*" Margin="4,0">
             <TextBlock Grid.Column="0" Text="{loc:Loc tab-proxy-col-name}" FontWeight="SemiBold"/>
             <TextBlock Grid.Column="1" Text="{loc:Loc tab-proxy-col-protocol}" FontWeight="SemiBold"/>
-            <TextBlock Grid.Column="2" Text="{loc:Loc tab-proxy-col-hostport}" FontWeight="SemiBold"/>
-            <TextBlock Grid.Column="3" Text="{loc:Loc tab-proxy-col-tcp}" FontWeight="SemiBold"/>
-            <TextBlock Grid.Column="4" Text="{loc:Loc tab-proxy-col-connect}" FontWeight="SemiBold"/>
-            <TextBlock Grid.Column="5" Text="{loc:Loc tab-proxy-col-udp}" FontWeight="SemiBold"/>
+            <TextBlock Grid.Column="2" Text="#" FontWeight="SemiBold"/>
+            <TextBlock Grid.Column="3" Text="{loc:Loc tab-proxy-col-hostport}" FontWeight="SemiBold"/>
+            <TextBlock Grid.Column="4" Text="{loc:Loc tab-proxy-col-tcp}" FontWeight="SemiBold"/>
+            <TextBlock Grid.Column="5" Text="{loc:Loc tab-proxy-col-connect}" FontWeight="SemiBold"/>
+            <TextBlock Grid.Column="6" Text="{loc:Loc tab-proxy-col-udp}" FontWeight="SemiBold"/>
           </Grid>
 
-          <ListBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile, Mode=TwoWay}" MaxHeight="290">
+          <ListBox Classes="ProxyProfilesList"
+                   ItemsSource="{Binding Profiles}"
+                   SelectedItem="{Binding SelectedProfile, Mode=TwoWay}"
+                   MaxHeight="290">
             <ListBox.ItemTemplate>
               <DataTemplate>
-                <Border Background="#10000000" CornerRadius="6" Padding="6">
-                  <Grid ColumnDefinitions="1.4*,0.8*,1.8*,0.9*,0.9*,0.9*">
+                <Border Classes="proxy-profile-row">
+                  <Grid ColumnDefinitions="1.2*,0.8*,0.7*,1.7*,0.9*,0.9*,0.9*">
                     <TextBlock Grid.Column="0" Text="{Binding Name}" VerticalAlignment="Center" Margin="0,0,6,0" />
                     <TextBlock Grid.Column="1" Text="{Binding Protocol}" VerticalAlignment="Center" Margin="0,0,6,0" />
-                    <TextBlock Grid.Column="2" VerticalAlignment="Center" Margin="0,0,6,0">
+                    <TextBlock Grid.Column="2" Text="1" VerticalAlignment="Center" Margin="0,0,6,0" Opacity="0.65" />
+                    <TextBlock Grid.Column="3" VerticalAlignment="Center" Margin="0,0,6,0">
                       <Run Text="{Binding Host}" />
                       <Run Text=":" />
                       <Run Text="{Binding Port}" />
                     </TextBlock>
-                    <TextBlock Grid.Column="3" Text="{Binding LastTcp}" VerticalAlignment="Center" Margin="0,0,6,0" />
-                    <TextBlock Grid.Column="4" Text="{Binding LastConnect}" VerticalAlignment="Center" Margin="0,0,6,0" />
-                    <TextBlock Grid.Column="5" Text="{Binding LastUdp}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="4" Text="{Binding LastTcp}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <TextBlock Grid.Column="5" Text="{Binding LastConnect}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <TextBlock Grid.Column="6" Text="{Binding LastUdp}" VerticalAlignment="Center" />
                   </Grid>
                 </Border>
               </DataTemplate>
@@ -81,10 +217,6 @@
           </ListBox>
         </StackPanel>
       </Border>
-
-      <TextBlock Text="{Binding Status}" Opacity="0.8" TextWrapping="Wrap"/>
-      <TextBlock IsVisible="{Binding SelectedProfile, Converter={x:Static ObjectConverters.IsNotNull}}"
-                 Text="{Binding SelectedProfile.LastTest}" Opacity="0.6" TextWrapping="Wrap"/>
     </StackPanel>
   </ScrollViewer>
 </UserControl>

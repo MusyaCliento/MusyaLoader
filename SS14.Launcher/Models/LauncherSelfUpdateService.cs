@@ -111,15 +111,12 @@ public sealed class LauncherSelfUpdateService
             return false;
 
         var tagName = (tagProp.GetString() ?? "").Trim();
-        var isStable = string.Equals(tagName, "Release", StringComparison.OrdinalIgnoreCase);
-        var isPre = string.Equals(tagName, "Pre-Release", StringComparison.OrdinalIgnoreCase);
-        if (!isStable && !isPre)
-            return false;
+        var isPre = root.TryGetProperty("prerelease", out var preProp) && preProp.GetBoolean();
 
         string? releaseName = root.TryGetProperty("name", out var nameProp) ? nameProp.GetString() : null;
-        if (!TryParseVersionFromTitle(releaseName, out var versionText, out var parsedVersion))
+        if (!TryParseVersionFromTagOrTitle(tagName, releaseName, out var versionText, out var parsedVersion))
         {
-            Log.Debug("Self-update: could not parse release version from title '{Name}'", releaseName);
+            Log.Debug("Self-update: could not parse release version from tag '{Tag}' or title '{Name}'", tagName, releaseName);
             return false;
         }
 
@@ -194,7 +191,7 @@ public sealed class LauncherSelfUpdateService
         return true;
     }
 
-    private static bool TryParseVersionFromTitle(string? releaseName, out string normalizedText, out Version version)
+    private static bool TryParseVersionFromTagOrTitle(string? tagName, string? releaseName, out string normalizedText, out Version version)
     {
         static string? ExtractVersionText(string? input)
         {
@@ -207,6 +204,14 @@ public sealed class LauncherSelfUpdateService
 
             var m = Regex.Match(input, @"(?<!\d)(\d+\.\d+\.\d+(?:\.\d+)?)(?!\d)");
             return m.Success ? m.Groups[1].Value : null;
+        }
+
+        var fromTag = ExtractVersionText(tagName ?? "");
+        if (fromTag != null && Version.TryParse(fromTag, out var parsedTagVersion) && parsedTagVersion != null)
+        {
+            version = parsedTagVersion;
+            normalizedText = fromTag;
+            return true;
         }
 
         var fromName = ExtractVersionText(releaseName ?? "");

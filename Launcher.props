@@ -10,7 +10,7 @@
         5. publish-release.yml GitHub Actions workflow
         -->
         <TargetFramework>net10.0</TargetFramework>
-        <Version>0.37.1.41</Version>
+        <Version>0.37.1.42</Version>
         <UseRidGraph>true</UseRidGraph>
 
         <!--
