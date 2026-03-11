@@ -39,27 +39,33 @@ public static class HappyEyeballsHttp
     // * Look I wanted to keep this simple OK?
     //   We don't do any fancy shit like statefulness or incremental sorting
     //   or incremental DNS updates who cares about that.
-    public static HttpClient CreateHttpClient(bool autoRedirect = true, IWebProxy? proxy = null)
+    public static HttpClient CreateHttpClient(bool autoRedirect = true)
     {
-        var handler = new SocketsHttpHandler
+        return new HttpClient(CreateDirectHandler(autoRedirect));
+    }
+
+    internal static SocketsHttpHandler CreateDirectHandler(bool autoRedirect = true)
+    {
+        return new SocketsHttpHandler
         {
             AutomaticDecompression = DecompressionMethods.All,
             AllowAutoRedirect = autoRedirect,
             // PooledConnectionLifetime = TimeSpan.FromSeconds(1)
+            ConnectCallback = OnConnect,
+            UseProxy = false,
+            Proxy = null
         };
+    }
 
-        if (proxy != null)
+    internal static SocketsHttpHandler CreateProxyHandler(IWebProxy proxy, bool autoRedirect = true)
+    {
+        return new SocketsHttpHandler
         {
-            // Proxy mode uses handler-native connection path so SOCKS can be applied.
-            handler.UseProxy = true;
-            handler.Proxy = proxy;
-        }
-        else
-        {
-            handler.ConnectCallback = OnConnect;
-        }
-
-        return new HttpClient(handler);
+            AutomaticDecompression = DecompressionMethods.All,
+            AllowAutoRedirect = autoRedirect,
+            UseProxy = true,
+            Proxy = proxy
+        };
     }
 
     private static async ValueTask<Stream> OnConnect(
@@ -272,4 +278,5 @@ public static class HappyEyeballsHttp
 
         return (successTask.Result, allTasks.IndexOf(successTask));
     }
+
 }

@@ -415,7 +415,7 @@
               </DockPanel>
 
               <TextBlock IsVisible="{Binding CustomFontInfo, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                        Text="{Binding CustomFontInfo, StringFormat='Custom font: {0}'}"
+                        Text="{Binding CustomFontInfo}"
                         Margin="4,4,0,0" 
                         FontSize="12" 
                         FontStyle="Italic" 

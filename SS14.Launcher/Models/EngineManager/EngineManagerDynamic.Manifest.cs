@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Net.Http;
 using System.Net.Http.Json;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Serilog;
+using SS14.Launcher;
 
 namespace SS14.Launcher.Models.EngineManager;
 
@@ -78,16 +82,92 @@ public sealed partial class EngineManagerDynamic
             _cachedRobustVersionInfo =
                 await ConfigConstants.RobustBuildsManifest.GetFromJsonAsync<Dictionary<string, VersionInfo>>(
                     _http, timeoutCts.Token);
+
+            if (_cachedRobustVersionInfo != null)
+                SaveRobustManifestCache(_cachedRobustVersionInfo);
         }
         catch (OperationCanceledException e) when (!cancel.IsCancellationRequested && timeoutCts.IsCancellationRequested)
         {
+            if (TryLoadRobustManifestCache(out var cached))
+            {
+                _cachedRobustVersionInfo = cached;
+                _robustCacheValidUntil = _manifestStopwatch.Elapsed + ConfigConstants.RobustManifestCacheTime;
+                Log.Warning("Timed out loading Robust build manifest. Using cached manifest from disk.");
+                return;
+            }
+
             throw new TimeoutException(
                 $"Timed out after {ManifestLoadTimeout.TotalSeconds:0}s while loading Robust build manifest. " +
                 "Check your proxy/tunnel stability or disable proxy for launcher downloads.",
                 e);
         }
+        catch (Exception e) when (e is HttpRequestException or IOException or JsonException or TaskCanceledException)
+        {
+            if (cancel.IsCancellationRequested)
+                throw;
+
+            if (TryLoadRobustManifestCache(out var cached))
+            {
+                _cachedRobustVersionInfo = cached;
+                _robustCacheValidUntil = _manifestStopwatch.Elapsed + ConfigConstants.RobustManifestCacheTime;
+                Log.Warning(e, "Failed to load Robust build manifest from network. Using cached manifest from disk.");
+                return;
+            }
+
+            throw;
+        }
 
         _robustCacheValidUntil = _manifestStopwatch.Elapsed + ConfigConstants.RobustManifestCacheTime;
+    }
+
+    private static bool TryLoadRobustManifestCache(out Dictionary<string, VersionInfo>? cached)
+    {
+        cached = null;
+        try
+        {
+            if (!File.Exists(LauncherPaths.PathRobustBuildManifestCache))
+                return false;
+
+            var json = File.ReadAllText(LauncherPaths.PathRobustBuildManifestCache);
+            cached = JsonSerializer.Deserialize<Dictionary<string, VersionInfo>>(json);
+            return cached != null;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private bool TryResolveCachedRedirect(string version, out string resolvedVersion)
+    {
+        resolvedVersion = version;
+        if (!TryLoadRobustManifestCache(out var cached) || cached == null)
+            return false;
+
+        if (!cached.TryGetValue(version, out var versionInfo))
+            return false;
+
+        while (versionInfo.RedirectVersion != null)
+        {
+            resolvedVersion = versionInfo.RedirectVersion;
+            if (!cached.TryGetValue(resolvedVersion, out versionInfo))
+                break;
+        }
+
+        return true;
+    }
+
+    private static void SaveRobustManifestCache(Dictionary<string, VersionInfo> manifest)
+    {
+        try
+        {
+            var json = JsonSerializer.Serialize(manifest);
+            File.WriteAllText(LauncherPaths.PathRobustBuildManifestCache, json);
+        }
+        catch (Exception e)
+        {
+            Log.Warning(e, "Failed to write Robust build manifest cache to disk.");
+        }
     }
 
     private FoundVersionInfo? FindVersionInfoInCached(string version, bool followRedirects)

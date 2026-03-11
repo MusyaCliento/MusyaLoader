@@ -15,8 +15,10 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Converters;
 using Avalonia.Input;
+using Avalonia.Layout;
 using Avalonia.Media;
 using DynamicData;
 using Marsey;
@@ -37,6 +39,7 @@ using SS14.Launcher.Models;
 using SS14.Launcher.Theme;
 using SS14.Launcher.Utility;
 using SS14.Launcher.Localization;
+using TerraFX.Interop.Windows;
 
 namespace SS14.Launcher.ViewModels.MainWindowTabs;
 
@@ -94,6 +97,7 @@ public class OptionsTabViewModel : MainWindowTabViewModel, INotifyPropertyChange
     public IReadOnlyList<ThemeFontOption> ThemeFonts { get; } = new List<ThemeFontOption>
     {
         new("Noto Sans (Default)", AppThemeManager.DefaultFontDescriptor),
+        new("Trollfont", "avares://SS14.Launcher/Assets/Fonts/trollfont.otf#Trollfont"),
         new("Segoe UI", "Segoe UI"),
         new("Arial", "Arial"),
         new("Verdana", "Verdana"),
@@ -269,7 +273,30 @@ public class OptionsTabViewModel : MainWindowTabViewModel, INotifyPropertyChange
             Cfg.CommitConfig();
 
             if (Application.Current != null)
-                AppThemeManager.ApplyFont(Application.Current, value.Descriptor);
+            {
+                if (!AppThemeManager.ApplyFont(Application.Current, value.Descriptor))
+                {
+                    _selectedThemeFont = ThemeFonts[0];
+                    Cfg.SetCVar(CVars.ThemeFont, _selectedThemeFont.Descriptor);
+                    Cfg.CommitConfig();
+                    _customFontInfo = _loc.GetString("marsey-Theme-Font-Invalid");
+                }
+                else if (AppThemeManager.LastFontInstalledForUser && !string.IsNullOrWhiteSpace(AppThemeManager.LastFontInstalledFamily))
+                {
+                    _customFontInfo = _loc.GetString("marsey-Theme-Font-Installed", ("font", AppThemeManager.LastFontInstalledFamily));
+                }
+                else if (!string.IsNullOrWhiteSpace(AppThemeManager.LastAppliedFontDescriptor) &&
+                         AppThemeManager.LastAppliedFontDescriptor != value.Descriptor)
+                {
+                    Cfg.SetCVar(CVars.ThemeFont, AppThemeManager.LastAppliedFontDescriptor);
+                    Cfg.CommitConfig();
+                    _customFontInfo = _loc.GetString("marsey-Theme-Font-Fallback", ("font", AppThemeManager.LastAppliedFontDescriptor));
+                }
+                else
+                {
+                    _customFontInfo = "";
+                }
+            }
 
             _customFontInfo = "";
             OnPropertyChanged(nameof(SelectedThemeFont));
@@ -278,6 +305,66 @@ public class OptionsTabViewModel : MainWindowTabViewModel, INotifyPropertyChange
     }
 
     public string CustomFontInfo => _customFontInfo;
+
+    private void ShowFontRestartPopup(string filePath)
+    {
+        var title = _loc.GetString("marsey-Theme-Font-Restart-Title");
+        var body = _loc.GetString(
+            "marsey-Theme-Font-Restart-Body",
+            ("font", Path.GetFileName(filePath)));
+
+        if (OperatingSystem.IsWindows())
+        {
+            _ = Helpers.MessageBoxHelper(body, title, MB.MB_OK | MB.MB_ICONINFORMATION);
+        }
+        else
+        {
+            var lifetime = Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
+            var owner = lifetime?.MainWindow;
+            if (owner == null)
+            {
+                Log.Warning("{Title}: {Body}", title, body);
+                return;
+            }
+
+            var okText = _loc.GetString("proxy-unavailable-ok");
+            if (string.IsNullOrWhiteSpace(okText))
+                okText = "OK";
+
+            var dialog = new Window
+            {
+                Title = title,
+                Width = 420,
+                SizeToContent = SizeToContent.Height,
+                CanResize = false,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Content = new StackPanel
+                {
+                    Margin = new Thickness(16),
+                    Spacing = 12,
+                    Children =
+                    {
+                        new TextBlock
+                        {
+                            Text = body,
+                            TextWrapping = TextWrapping.Wrap
+                        },
+                        new Button
+                        {
+                            Content = okText,
+                            HorizontalAlignment = HorizontalAlignment.Right,
+                            Width = 100
+                        }
+                    }
+                }
+            };
+
+            if (dialog.Content is StackPanel panel && panel.Children[^1] is Button okButton)
+                okButton.Click += (_, _) => dialog.Close();
+
+            _ = dialog.ShowDialog(owner);
+        }
+    }
 
     public Color CustomThemeBackground
     {
@@ -377,19 +464,61 @@ public class OptionsTabViewModel : MainWindowTabViewModel, INotifyPropertyChange
 
     public void ApplyCustomFontFile(string filePath)
     {
-        var familyGuess = Path.GetFileNameWithoutExtension(filePath);
-        var uri = new Uri(filePath).AbsoluteUri;
-        var descriptor = $"{uri}#{familyGuess}";
+        var descriptor = "";
+        if (!AppThemeManager.TryBuildDescriptorFromFile(filePath, out descriptor))
+        {
+            var familyGuess = Path.GetFileNameWithoutExtension(filePath);
+            var uri = new Uri(filePath).AbsoluteUri;
+            descriptor = $"{uri}#{familyGuess}";
+        }
 
         Cfg.SetCVar(CVars.ThemeFont, descriptor);
         Cfg.CommitConfig();
 
         if (Application.Current != null)
-            AppThemeManager.ApplyFont(Application.Current, descriptor);
+        {
+            if (!AppThemeManager.ApplyFont(Application.Current, descriptor))
+            {
+                _selectedThemeFont = ThemeFonts[0];
+                Cfg.SetCVar(CVars.ThemeFont, _selectedThemeFont.Descriptor);
+                Cfg.CommitConfig();
+                _customFontInfo = _loc.GetString("marsey-Theme-Font-Invalid");
+                AppThemeManager.OpenFontInstallUI(filePath);
+                _customFontInfo = _loc.GetString(
+                    "marsey-Theme-Font-Install-Restart",
+                    ("font", Path.GetFileName(filePath)));
+                ShowFontRestartPopup(filePath);
+                OnPropertyChanged(nameof(SelectedThemeFont));
+                OnPropertyChanged(nameof(CustomFontInfo));
+                return;
+            }
 
-        _customFontInfo = Path.GetFileName(filePath);
+            if (!string.IsNullOrWhiteSpace(AppThemeManager.LastAppliedFontDescriptor) &&
+                AppThemeManager.LastAppliedFontDescriptor != descriptor)
+            {
+                Cfg.SetCVar(CVars.ThemeFont, AppThemeManager.LastAppliedFontDescriptor);
+                Cfg.CommitConfig();
+                descriptor = AppThemeManager.LastAppliedFontDescriptor;
+                AppThemeManager.OpenFontInstallUI(filePath);
+                _customFontInfo = _loc.GetString(
+                    "marsey-Theme-Font-Install-Restart",
+                    ("font", Path.GetFileName(filePath)));
+                ShowFontRestartPopup(filePath);
+                OnPropertyChanged(nameof(CustomFontInfo));
+                return;
+            }
+            if (AppThemeManager.LastFontInstalledForUser && !string.IsNullOrWhiteSpace(AppThemeManager.LastFontInstalledFamily))
+            {
+                _customFontInfo = _loc.GetString("marsey-Theme-Font-Installed", ("font", AppThemeManager.LastFontInstalledFamily));
+                OnPropertyChanged(nameof(CustomFontInfo));
+                return;
+            }
+        }
+
+        _customFontInfo = _loc.GetString("marsey-Theme-Font-Selected", ("font", Path.GetFileName(filePath)));
         OnPropertyChanged(nameof(CustomFontInfo));
     }
+
 
     public string ExportCustomThemeJson()
     {

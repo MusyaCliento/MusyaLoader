@@ -750,6 +750,14 @@ marsey-Theme-Decor = Декоративный узор
 marsey-Theme-Decor-Desc = Включает полосатую текстуру на фоне вкладок и экрана логина.
 marsey-Theme-Font = Шрифт
 marsey-Theme-Font-Desc = Выберите встроенный шрифт или загрузите свой файл .ttf/.otf.
+marsey-Theme-Font-Selected = Пользовательский шрифт: { $font }
+marsey-Theme-Font-Fallback = Файл шрифта не поддерживается. Используется { $font }
+marsey-Theme-Font-Invalid = Файл шрифта не поддерживается. Используется стандартный
+marsey-Theme-Font-Installed = Установлено для текущего пользователя: { $font }
+marsey-Theme-Font-Install = Файл шрифта не поддерживается. Открыто окно установки для { $font }
+marsey-Theme-Font-Install-Restart = Файл шрифта не поддерживается. Открыто окно установки для { $font }. Перезапустите лаунчер после установки.
+marsey-Theme-Font-Restart-Title = Требуется перезапуск
+marsey-Theme-Font-Restart-Body = Установите шрифт и перезапустите лаунчер, чтобы применить его.\n\nШрифт: { $font }
 marsey-Theme-Font-Load = Загрузить свой шрифт
 
 ## Launcher self-update
@@ -796,6 +804,7 @@ tab-proxy-launcher = Проксировать лаунчер
 tab-proxy-game = Проксировать Игру (Нужен тест UDP, экспериментально)
 tab-proxy-game-info = Пускает игровой трафик через SS14.ProxyService и SOCKS5 UDP relay. Нужна поддержка UDP ASSOCIATE на SOCKS5-сервере. Если UDP не поддерживается, подключение может зависать на "Подключение...".
 tab-proxy-updates = Проксировать Обновления (GitHub и т.д.)
+tab-proxy-bypass = Обход региональных ограничений для сборок Robust
 tab-proxy-add = Добавить
 tab-proxy-edit = Изменить
 tab-proxy-remove = Удалить

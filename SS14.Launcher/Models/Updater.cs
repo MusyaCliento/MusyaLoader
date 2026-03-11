@@ -278,6 +278,12 @@ public sealed partial class Updater : ReactiveObject
                 {
                     // Engine version may change here due to manifest version redirects.
                     var newEngineVersion = await InstallEngineVersionIfMissing(version, cancel);
+                    if (!string.Equals(newEngineVersion, version, StringComparison.Ordinal))
+                    {
+                        con.Execute(
+                            "UPDATE ContentEngineDependency SET ModuleVersion = @ModuleVersion WHERE VersionId = @VersionId AND ModuleName = 'Robust'",
+                            new { ModuleVersion = newEngineVersion, VersionId = versionRowId });
+                    }
                     modules[index] = (name, newEngineVersion);
                 }
                 else
@@ -826,12 +832,25 @@ public sealed partial class Updater : ReactiveObject
 
     private async Task CullEngineVersionsMaybe(SqliteConnection contentConnection)
     {
-        await _engineManager.DoEngineCullMaybeAsync(contentConnection);
+        try
+        {
+            await _engineManager.DoEngineCullMaybeAsync(contentConnection);
+        }
+        catch (Exception e) when (e is TimeoutException or HttpRequestException)
+        {
+            Log.Warning(e, "Engine cull skipped due to manifest/network error.");
+        }
     }
 
     private async Task<string> InstallEngineVersionIfMissing(string engineVer, CancellationToken cancel)
     {
         Status = UpdateStatus.DownloadingEngineVersion;
+        if (_cfg.EngineInstallations.Lookup(engineVer).HasValue)
+        {
+            Progress = null;
+            return engineVer;
+        }
+
         var (changedVersion, _) = await _engineManager.DownloadEngineIfNecessary(engineVer, DownloadProgressCallback, cancel);
 
         Progress = null;

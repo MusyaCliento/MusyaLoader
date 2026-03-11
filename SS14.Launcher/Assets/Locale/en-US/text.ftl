@@ -572,6 +572,14 @@ marsey-Theme-Decor = Decorative pattern
 marsey-Theme-Decor-Desc = Enables the striped texture in tab and login backgrounds.
 marsey-Theme-Font = Font
 marsey-Theme-Font-Desc = Choose one of the built-in fonts or load your own .ttf/.otf font file.
+marsey-Theme-Font-Selected = Custom font: { $font }
+marsey-Theme-Font-Fallback = Font file not supported. Using { $font }
+marsey-Theme-Font-Invalid = Font file not supported. Using default
+marsey-Theme-Font-Installed = Installed for current user: { $font }
+marsey-Theme-Font-Install = Font file not supported. Opening install window for { $font }
+marsey-Theme-Font-Install-Restart = Font file not supported. Opening install window for { $font }. Restart the launcher after installing.
+marsey-Theme-Font-Restart-Title = Restart Required
+marsey-Theme-Font-Restart-Body = Install the font and restart the launcher to apply it.\n\nFont: { $font }
 marsey-Theme-Font-Load = Load custom font
 
 ## Launcher self-update
@@ -618,6 +626,7 @@ tab-proxy-launcher = Proxy launcher
 tab-proxy-game = Proxy game (requires UDP test, experimental)
 tab-proxy-game-info = Routes game traffic through SS14.ProxyService and SOCKS5 UDP relay. Requires SOCKS5 server support for UDP ASSOCIATE. If UDP is not supported, connection may fail or loop on "Connecting...".
 tab-proxy-updates = Proxy updates (GitHub, releases, etc.)
+tab-proxy-bypass = Bypass regional restrictions for Robust builds
 tab-proxy-add = Add
 tab-proxy-edit = Edit
 tab-proxy-remove = Remove

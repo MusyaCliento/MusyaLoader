@@ -189,7 +189,17 @@ public class App : Application
             cfg.GetCVar(CVars.ThemeGradient),
             cfg.GetCVar(CVars.ThemeDecor),
             ReadCustomThemeColors(cfg));
-        AppThemeManager.ApplyFont(this, cfg.GetCVar(CVars.ThemeFont));
+        if (!AppThemeManager.ApplyFont(this, cfg.GetCVar(CVars.ThemeFont)))
+        {
+            cfg.SetCVar(CVars.ThemeFont, AppThemeManager.DefaultFontDescriptor);
+            cfg.CommitConfig();
+        }
+        else if (!string.IsNullOrWhiteSpace(AppThemeManager.LastAppliedFontDescriptor) &&
+                 AppThemeManager.LastAppliedFontDescriptor != cfg.GetCVar(CVars.ThemeFont))
+        {
+            cfg.SetCVar(CVars.ThemeFont, AppThemeManager.LastAppliedFontDescriptor);
+            cfg.CommitConfig();
+        }
         loc.Initialize();
         launcherInfo.Initialize();
         contentManager.Initialize();
@@ -229,6 +239,7 @@ public class App : Application
     {
         var msgr = Locator.Current.GetRequiredService<LauncherMessaging>();
         msgr.StopAndWait();
+        AppThemeManager.UnregisterPrivateFonts();
     }
 
     private static AppThemeManager.CustomThemeColors ReadCustomThemeColors(DataManager cfg)

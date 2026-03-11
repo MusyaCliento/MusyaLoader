@@ -219,7 +219,10 @@ public sealed class MainWindowViewModel : ViewModelBase, IErrorOverlayOwner
             return;
         }
 
-        if (!_cfg.GetCVar(CVars.LauncherProxyEnabled))
+        var launcherProxyEnabled = _cfg.GetCVar(CVars.LauncherProxyEnabled);
+        var updatesProxyEnabled = _cfg.GetCVar(CVars.LauncherProxyUpdatesEnabled);
+        var bypassProxyEnabled = _cfg.GetCVar(CVars.LauncherProxyBypassRegionEnabled);
+        if (!launcherProxyEnabled && !updatesProxyEnabled && !bypassProxyEnabled)
             return;
 
         if (!Socks5ProxyHelper.TryReadProxyValues(_cfg, out var proxyCfg, out var error))
@@ -232,6 +235,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IErrorOverlayOwner
 
         LauncherProxyRuntimeState.DisableLauncherProxyForSession = true;
         LauncherProxyRuntimeState.DisableUpdateProxyForSession = true;
+        LauncherProxyRuntimeState.DisableBypassProxyForSession = true;
 
         var message = _loc.GetString(
             "proxy-unavailable-message",

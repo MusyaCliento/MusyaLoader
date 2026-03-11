@@ -50,6 +50,8 @@ public partial class Connector : ReactiveObject
     private string? _launchFailureReason;
 
     private readonly HttpClient _http;
+    private Process? _udpRelayProcess;
+    private bool _udpRelayIndependent;
 
     // --- MARSEY PATCH BEGIN ---
     private string? _forkid;
@@ -59,8 +61,6 @@ public partial class Connector : ReactiveObject
     private TaskCompletionSource<PrivacyPolicyAcceptResult>? _acceptPrivacyPolicyTcs;
     private ServerPrivacyPolicyInfo? _serverPrivacyPolicyInfo;
     private bool _privacyPolicyDifferentVersion;
-    private Process? _udpRelayProcess;
-    private bool _udpRelayIndependent;
 
     public Connector()
     {
@@ -162,6 +162,7 @@ public partial class Connector : ReactiveObject
     var installation = await RunUpdateAsync(info.BuildInformation, cancel);
 
     var connectAddress = GetConnectAddress(info, infoAddr);
+    connectAddress = TryStartUdpRelayIfNeeded(connectAddress);
 
     await LaunchClientWrap(installation, info, info.BuildInformation, connectAddress, parsedAddr, false, cancel);
         Log.Warning("========== SERVER CONNECT END: {Address} ==========", address);
@@ -247,20 +248,21 @@ public partial class Connector : ReactiveObject
         _acceptPrivacyPolicyTcs = null;
         PrivacyPolicyDifferentVersion = default;
 
-        if (_udpRelayProcess is { HasExited: false })
+        if (_udpRelayProcess != null && !_udpRelayIndependent)
         {
             try
             {
-                _udpRelayProcess.Kill(true);
+                if (!_udpRelayProcess.HasExited)
+                    _udpRelayProcess.Kill(true);
             }
             catch
             {
             }
+            finally
+            {
+                _udpRelayProcess = null;
+            }
         }
-
-        _udpRelayProcess?.Dispose();
-        _udpRelayProcess = null;
-        _udpRelayIndependent = false;
     }
 
     private async Task LaunchContentBundleInternal(IStorageFile file, CancellationToken cancel)
@@ -457,8 +459,6 @@ public partial class Connector : ReactiveObject
                 args.Add("--cvar");
                 args.Add("launch.content_bundle=true");
             }
-
-            connectAddress = await TryStartUdpRelayIfNeeded(connectAddress);
 
             if (connectAddress != null)
             {
@@ -688,17 +688,167 @@ public partial class Connector : ReactiveObject
         startInfo.EnvironmentVariables["DOTNET_MULTILEVEL_LOOKUP"] = "0";
         startInfo.EnvironmentVariables["MARSEY_JUMP_LOADER_DEBUG"] = MarseyConf.JumpLoaderDebug ? "true" : null;
 
-        if (_cfg.GetCVar(CVars.LauncherProxyApplyToLoader) &&
-            Socks5ProxyHelper.TryReadProxyValues(_cfg, out var proxyCfg, out _))
+        ConfigureProxyEnvironment(startInfo);
+    }
+
+    private void ConfigureProxyEnvironment(ProcessStartInfo info)
+    {
+        if (!_cfg.GetCVar(CVars.LauncherProxyApplyToLoader))
         {
-            var proxyUri = proxyCfg.ToProxyUriString(includeCredentials: true);
-            startInfo.EnvironmentVariables["ALL_PROXY"] = proxyUri;
-            startInfo.EnvironmentVariables["HTTP_PROXY"] = proxyUri;
-            startInfo.EnvironmentVariables["HTTPS_PROXY"] = proxyUri;
-            startInfo.EnvironmentVariables["all_proxy"] = proxyUri;
-            startInfo.EnvironmentVariables["http_proxy"] = proxyUri;
-            startInfo.EnvironmentVariables["https_proxy"] = proxyUri;
+            ClearProxyEnv(info);
+            return;
         }
+
+        if (!Socks5ProxyHelper.TryReadProxyValues(_cfg, out var proxy, out var error))
+        {
+            if (!string.IsNullOrWhiteSpace(error))
+                Log.Warning("Proxy for loader is enabled but config is invalid: {Error}", error);
+            ClearProxyEnv(info);
+            return;
+        }
+
+        var proxyUri = proxy.ToProxyUriString(includeCredentials: true);
+        info.EnvironmentVariables["ALL_PROXY"] = proxyUri;
+        info.EnvironmentVariables["HTTP_PROXY"] = proxyUri;
+        info.EnvironmentVariables["HTTPS_PROXY"] = proxyUri;
+        info.EnvironmentVariables["NO_PROXY"] = "localhost,127.0.0.1";
+
+        info.EnvironmentVariables["all_proxy"] = proxyUri;
+        info.EnvironmentVariables["http_proxy"] = proxyUri;
+        info.EnvironmentVariables["https_proxy"] = proxyUri;
+        info.EnvironmentVariables["no_proxy"] = "localhost,127.0.0.1";
+    }
+
+    private static void ClearProxyEnv(ProcessStartInfo info)
+    {
+        string[] keys =
+        [
+            "ALL_PROXY", "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY",
+            "all_proxy", "http_proxy", "https_proxy", "no_proxy"
+        ];
+
+        foreach (var key in keys)
+        {
+            if (info.EnvironmentVariables.ContainsKey(key))
+                info.EnvironmentVariables.Remove(key);
+        }
+    }
+
+    private Uri TryStartUdpRelayIfNeeded(Uri connectAddress)
+    {
+        if (!_cfg.GetCVar(CVars.LauncherProxyUseUdpRelay))
+            return connectAddress;
+
+        if (!string.Equals(connectAddress.Scheme, "udp", StringComparison.OrdinalIgnoreCase))
+            return connectAddress;
+
+        if (!Socks5ProxyHelper.TryReadProxyValues(_cfg, out var proxyCfg, out var error))
+        {
+            if (!string.IsNullOrWhiteSpace(error))
+                Log.Warning("UDP relay enabled but proxy config invalid: {Error}", error);
+            return connectAddress;
+        }
+
+        var listenHost = "127.0.0.1";
+        var listenPort = GetFreeUdpPort();
+        var targetHost = connectAddress.Host;
+        var targetPort = connectAddress.Port;
+
+        var proxyServicePath = GetProxyServiceExecutablePath();
+        if (string.IsNullOrWhiteSpace(proxyServicePath) || !File.Exists(proxyServicePath))
+        {
+            Log.Warning("ProxyService executable not found: {Path}", proxyServicePath);
+            return connectAddress;
+        }
+
+        var debug = _cfg.GetCVar(CVars.LauncherProxyServiceDebug);
+        var independent = _cfg.GetCVar(CVars.LauncherProxyServiceIndependent);
+
+        var psi = new ProcessStartInfo
+        {
+            FileName = proxyServicePath,
+            UseShellExecute = false,
+            CreateNoWindow = !debug
+        };
+        if (!debug)
+        {
+            psi.RedirectStandardOutput = true;
+            psi.RedirectStandardError = true;
+        }
+
+        psi.ArgumentList.Add("--listen-host");
+        psi.ArgumentList.Add(listenHost);
+        psi.ArgumentList.Add("--listen-port");
+        psi.ArgumentList.Add(listenPort.ToString());
+        psi.ArgumentList.Add("--target-host");
+        psi.ArgumentList.Add(targetHost);
+        psi.ArgumentList.Add("--target-port");
+        psi.ArgumentList.Add(targetPort.ToString());
+        psi.ArgumentList.Add("--socks-host");
+        psi.ArgumentList.Add(proxyCfg.Host);
+        psi.ArgumentList.Add("--socks-port");
+        psi.ArgumentList.Add(proxyCfg.Port.ToString());
+
+        if (!string.IsNullOrWhiteSpace(proxyCfg.Username))
+        {
+            psi.ArgumentList.Add("--socks-user");
+            psi.ArgumentList.Add(proxyCfg.Username);
+            psi.ArgumentList.Add("--socks-pass");
+            psi.ArgumentList.Add(proxyCfg.Password ?? "");
+        }
+
+        if (!independent)
+        {
+            psi.ArgumentList.Add("--parent-pid");
+            psi.ArgumentList.Add(Process.GetCurrentProcess().Id.ToString());
+        }
+
+        var process = Process.Start(psi);
+        if (process != null)
+        {
+            _udpRelayProcess = process;
+            _udpRelayIndependent = independent;
+
+            if (!debug)
+                PipeLogOutput(process);
+        }
+
+        var relayAddress = new UriBuilder("udp", listenHost, listenPort).Uri;
+        Log.Information("UDP relay enabled: {From} -> {To}", connectAddress, relayAddress);
+        return relayAddress;
+    }
+
+    private static int GetFreeUdpPort()
+    {
+        using var udp = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
+        return ((IPEndPoint)udp.Client.LocalEndPoint!).Port;
+    }
+
+    private static string? GetProxyServiceExecutablePath()
+    {
+#if FULL_RELEASE
+        var basePath = LauncherPaths.DirLauncherInstall;
+        if (OperatingSystem.IsMacOS())
+            return null;
+
+        if (OperatingSystem.IsWindows())
+            return Path.Combine(basePath, "SS14.ProxyService.exe");
+        return Path.Combine(basePath, "SS14.ProxyService");
+#else
+#if RELEASE
+        const string buildConfiguration = "Release";
+#else
+        const string buildConfiguration = "Debug";
+#endif
+        var basePath = Path.GetFullPath(Path.Combine(
+            LauncherPaths.DirLauncherInstall,
+            "..", "..", "..", "..",
+            "SS14.ProxyService", "bin", buildConfiguration, "net10.0"));
+
+        if (OperatingSystem.IsWindows())
+            return Path.Combine(basePath, "SS14.ProxyService.exe");
+        return Path.Combine(basePath, "SS14.ProxyService");
+#endif
     }
 
     private void ConfigureLogging(ProcessStartInfo startInfo)
@@ -925,159 +1075,6 @@ public partial class Connector : ReactiveObject
         // Implemented in private repo for Steam.
     }
 
-    private async Task<Uri?> TryStartUdpRelayIfNeeded(Uri? connectAddress)
-    {
-        if (connectAddress == null)
-            return null;
-
-        if (!_cfg.GetCVar(CVars.LauncherProxyUseUdpRelay))
-            return connectAddress;
-
-        if (!string.Equals(connectAddress.Scheme, "udp", StringComparison.OrdinalIgnoreCase))
-            return connectAddress;
-
-        if (!Socks5ProxyHelper.TryReadProxyValues(_cfg, out var proxyCfg, out var proxyError))
-        {
-            Log.Warning("UDP relay was requested but proxy config is invalid: {Error}", proxyError);
-            return connectAddress;
-        }
-
-        if (_cfg.GetCVar(CVars.LauncherProxyGuardGameLaunch))
-        {
-            using var probeCts = new CancellationTokenSource(TimeSpan.FromSeconds(4));
-            var probe = await Socks5Probe.ProbeUdpAssociateAsync(proxyCfg, probeCts.Token);
-            if (!probe.Ok)
-            {
-                LaunchFailureReason = $"Proxy UDP test failed: {probe.Error}";
-                Log.Warning("Blocking launch because proxy UDP preflight failed: {Error}", probe.Error);
-                throw new ConnectException(ConnectionStatus.ConnectionFailed, new InvalidOperationException(LaunchFailureReason));
-            }
-        }
-
-        if (_udpRelayProcess is { HasExited: false })
-        {
-            try
-            {
-                _udpRelayProcess.Kill(true);
-            }
-            catch
-            {
-            }
-
-            _udpRelayProcess.Dispose();
-            _udpRelayProcess = null;
-            _udpRelayIndependent = false;
-        }
-
-        var targetHost = connectAddress.Host;
-        var targetPort = connectAddress.Port;
-        if (string.IsNullOrWhiteSpace(targetHost) || targetPort <= 0)
-            return connectAddress;
-
-        var relayPath = GetProxyServiceExecutablePath();
-        if (string.IsNullOrWhiteSpace(relayPath) || !File.Exists(relayPath))
-        {
-            Log.Warning("UDP relay executable not found: {Path}", relayPath);
-            return connectAddress;
-        }
-
-        var localPort = GetFreeUdpPort();
-
-        var proxyDebug = _cfg.GetCVar(CVars.LauncherProxyServiceDebug);
-        var independentRelay = false;
-        var showProxyConsole = proxyDebug && OperatingSystem.IsWindows();
-
-        var psi = new ProcessStartInfo
-        {
-            FileName = relayPath,
-            UseShellExecute = showProxyConsole,
-            RedirectStandardOutput = false,
-            RedirectStandardError = false
-        };
-
-        psi.CreateNoWindow = !proxyDebug;
-        if (OperatingSystem.IsWindows())
-            psi.WindowStyle = proxyDebug ? ProcessWindowStyle.Normal : ProcessWindowStyle.Hidden;
-
-        psi.ArgumentList.Add("--listen-host");
-        psi.ArgumentList.Add("127.0.0.1");
-        psi.ArgumentList.Add("--listen-port");
-        psi.ArgumentList.Add(localPort.ToString());
-        psi.ArgumentList.Add("--target-host");
-        psi.ArgumentList.Add(targetHost);
-        psi.ArgumentList.Add("--target-port");
-        psi.ArgumentList.Add(targetPort.ToString());
-        psi.ArgumentList.Add("--socks-host");
-        psi.ArgumentList.Add(proxyCfg.Host);
-        psi.ArgumentList.Add("--socks-port");
-        psi.ArgumentList.Add(proxyCfg.Port.ToString());
-        if (!string.IsNullOrWhiteSpace(proxyCfg.Username))
-        {
-            psi.ArgumentList.Add("--socks-user");
-            psi.ArgumentList.Add(proxyCfg.Username);
-            psi.ArgumentList.Add("--socks-pass");
-            psi.ArgumentList.Add(proxyCfg.Password ?? "");
-        }
-
-        if (!independentRelay)
-        {
-            psi.ArgumentList.Add("--parent-pid");
-            psi.ArgumentList.Add(Process.GetCurrentProcess().Id.ToString());
-        }
-
-        _udpRelayProcess = Process.Start(psi);
-        if (_udpRelayProcess == null)
-            return connectAddress;
-        _udpRelayIndependent = independentRelay;
-
-        // Give relay a very short warm-up window.
-        await Task.Delay(120);
-        if (_udpRelayProcess.HasExited)
-        {
-            Log.Warning("UDP relay process exited immediately with code {Code}", _udpRelayProcess.ExitCode);
-            return connectAddress;
-        }
-
-        var rewritten = new UriBuilder(connectAddress)
-        {
-            Host = "127.0.0.1",
-            Port = localPort
-        }.Uri;
-
-        Log.Information("UDP relay enabled: {Original} -> {Rewritten}", connectAddress, rewritten);
-        return rewritten;
-    }
-
-    private static int GetFreeUdpPort()
-    {
-        using var udp = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
-        return ((IPEndPoint)udp.Client.LocalEndPoint!).Port;
-    }
-
-    private static string GetProxyServiceExecutablePath()
-    {
-#if FULL_RELEASE
-        var dir = LauncherPaths.DirLauncherInstall;
-        if (OperatingSystem.IsWindows())
-            return Path.Combine(dir, "SS14.ProxyService.exe");
-        return Path.Combine(dir, "SS14.ProxyService");
-#else
-#if RELEASE
-        const string buildConfiguration = "Release";
-#else
-        const string buildConfiguration = "Debug";
-#endif
-        var basePath = Path.GetFullPath(Path.Combine(
-            LauncherPaths.DirLauncherInstall,
-            "..", "..", "..", "..",
-            "SS14.ProxyService", "bin", buildConfiguration, "net10.0"));
-
-        if (OperatingSystem.IsWindows())
-            return Path.Combine(basePath, "SS14.ProxyService.exe");
-        return Path.Combine(basePath, "SS14.ProxyService");
-#endif
-    }
-
     private static async void PipeOutput(Process process, Stream targetStdout, Stream targetStderr)
     {
         async Task DoPipe(StreamReader reader, Stream writer)
@@ -1197,7 +1194,8 @@ public partial class Connector : ReactiveObject
                     RedirectStandardOutput = true
                 });
 
-                PipeLogOutput(xattr);
+                if (xattr != null)
+                    PipeLogOutput(xattr);
 
                 await xattr.WaitForExitAsync();
 

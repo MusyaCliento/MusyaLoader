@@ -393,6 +393,7 @@ public static class CVars
     public static readonly CVarDef<bool> LauncherProxyUseUdpRelay = CVarDef.Create("LauncherProxyUseUdpRelay", false);
     public static readonly CVarDef<string> LauncherProxyProfilesJson = CVarDef.Create("LauncherProxyProfilesJson", "");
     public static readonly CVarDef<string> LauncherProxySelectedProfileId = CVarDef.Create("LauncherProxySelectedProfileId", "");
+    public static readonly CVarDef<bool> LauncherProxyBypassRegionEnabled = CVarDef.Create("LauncherProxyBypassRegionEnabled", false);
     public static readonly CVarDef<bool> LauncherProxyGuardGameLaunch = CVarDef.Create("LauncherProxyGuardGameLaunch", false);
     public static readonly CVarDef<bool> LauncherProxyServiceDebug = CVarDef.Create("LauncherProxyServiceDebug", false);
     public static readonly CVarDef<bool> LauncherProxyServiceIndependent = CVarDef.Create("LauncherProxyServiceIndependent", false);

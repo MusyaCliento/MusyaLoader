@@ -138,6 +138,10 @@
           </Border>
 
           <Border Classes="ProxyToggleRow">
+            <CheckBox IsChecked="{Binding ProxyBypassRegionEnabled}" Content="{loc:Loc tab-proxy-bypass}" />
+          </Border>
+
+          <Border Classes="ProxyToggleRow">
             <CheckBox IsChecked="{Binding ProxyGuardGameLaunch}" Content="{loc:Loc tab-proxy-guard}" />
           </Border>
 

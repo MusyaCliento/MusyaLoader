@@ -369,39 +369,6 @@ public sealed class LauncherSelfUpdateService
 
     private HttpClient CreateHttpClientForUpdateChecks()
     {
-        if (LauncherProxyRuntimeState.DisableUpdateProxyForSession)
-            return HappyEyeballsHttp.CreateHttpClient();
-
-        if (_cfg.GetCVar(CVars.LauncherProxyUpdatesEnabled) &&
-            Socks5ProxyHelper.TryReadProxyValues(_cfg, out var proxyCfg, out _))
-        {
-            if (IsProxyReachable(proxyCfg.Host, proxyCfg.Port, TimeSpan.FromMilliseconds(1200), out var error))
-                return HappyEyeballsHttp.CreateHttpClient(proxy: proxyCfg.ToWebProxy());
-
-            Log.Warning(
-                "Update proxy is enabled but unreachable ({Host}:{Port}): {Error}. Falling back to direct update checks.",
-                proxyCfg.Host,
-                proxyCfg.Port,
-                error);
-        }
-
-        return HappyEyeballsHttp.CreateHttpClient();
-    }
-
-    private static bool IsProxyReachable(string host, int port, TimeSpan timeout, out string error)
-    {
-        try
-        {
-            using var tcp = new TcpClient();
-            using var cts = new CancellationTokenSource(timeout);
-            tcp.ConnectAsync(host, port, cts.Token).GetAwaiter().GetResult();
-            error = "";
-            return true;
-        }
-        catch (Exception e)
-        {
-            error = e.Message;
-            return false;
-        }
+        return new HttpClient(new ProxyRoutingHandler(_cfg));
     }
 }

@@ -84,8 +84,38 @@ public sealed partial class EngineManagerDynamic : IEngineManager
             return new EngineInstallationResult(engineVersion, false);
         }
 #endif
+        if (_cfg.EngineInstallations.Lookup(engineVersion).HasValue)
+        {
+            return new EngineInstallationResult(engineVersion, false);
+        }
 
-        var foundVersion = await GetVersionInfo(engineVersion, cancel: cancel);
+        if (TryResolveCachedRedirect(engineVersion, out var cachedRedirect)
+            && _cfg.EngineInstallations.Lookup(cachedRedirect).HasValue)
+        {
+            Log.Debug("Using cached redirect for engine version {Requested} -> {Redirected}", engineVersion, cachedRedirect);
+            return new EngineInstallationResult(cachedRedirect, false);
+        }
+
+        FoundVersionInfo? foundVersion = null;
+        try
+        {
+            foundVersion = await GetVersionInfo(engineVersion, cancel: cancel);
+        }
+        catch (Exception e) when (e is TimeoutException or HttpRequestException or TaskCanceledException)
+        {
+            var fallback = SelectInstalledEngineFallback(engineVersion);
+            if (fallback != null)
+            {
+                Log.Warning(e,
+                    "Engine manifest unavailable. Falling back to installed engine {EngineVersion} for requested {RequestedVersion}.",
+                    fallback,
+                    engineVersion);
+                return new EngineInstallationResult(fallback, false);
+            }
+
+            throw;
+        }
+
         if (foundVersion == null)
             throw new UpdateException("Unable to find engine version in manifest!");
 
@@ -238,6 +268,38 @@ public sealed partial class EngineManagerDynamic : IEngineManager
 
         return true;
 
+    }
+
+    private string? SelectInstalledEngineFallback(string requestedVersion)
+    {
+        var installed = _cfg.EngineInstallations.Items.Select(i => i.Version).ToArray();
+        if (installed.Length == 0)
+            return null;
+
+        if (!Version.TryParse(requestedVersion, out var requestedParsed))
+            return null;
+
+        var parsed = installed
+            .Select(v => (Version: v, Parsed: Version.TryParse(v, out var ver) ? ver : null))
+            .Where(x => x.Parsed != null)
+            .ToArray();
+
+        var sameMinor = parsed
+            .Where(x => x.Parsed!.Major == requestedParsed.Major && x.Parsed.Minor == requestedParsed.Minor)
+            .OrderByDescending(x => x.Parsed)
+            .Select(x => x.Version)
+            .FirstOrDefault();
+
+        if (sameMinor != null)
+            return sameMinor;
+
+        var sameMajor = parsed
+            .Where(x => x.Parsed!.Major == requestedParsed.Major)
+            .OrderByDescending(x => x.Parsed)
+            .Select(x => x.Version)
+            .FirstOrDefault();
+
+        return sameMajor;
     }
 
     private async Task CopyOverrideModule(string name)

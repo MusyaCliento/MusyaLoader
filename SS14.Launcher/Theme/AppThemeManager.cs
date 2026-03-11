@@ -1,7 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using System.Runtime.InteropServices;
+using System.Diagnostics;
+using Microsoft.Win32;
 using Avalonia;
 using Avalonia.Media;
+using Serilog;
 
 namespace SS14.Launcher.Theme;
 
@@ -257,17 +263,798 @@ public static class AppThemeManager
             : Color.Parse("#AA000000"));
     }
 
-    public static void ApplyFont(Application app, string? descriptor)
+    public static string? LastAppliedFontDescriptor { get; private set; }
+    public static bool LastApplyUsedFallback { get; private set; }
+    public static string? LastFontErrorMessage { get; private set; }
+    public static bool LastFontInstalledForUser { get; private set; }
+    public static string? LastFontInstalledFamily { get; private set; }
+    private static readonly HashSet<string> FailedFontDescriptors = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly HashSet<string> PrivateFontFiles = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly HashSet<string> SessionFontFiles = new(StringComparer.OrdinalIgnoreCase);
+
+    public static void ClearFontFailureCache(string? descriptor = null)
+    {
+        if (string.IsNullOrWhiteSpace(descriptor))
+        {
+            FailedFontDescriptors.Clear();
+            return;
+        }
+
+        FailedFontDescriptors.Remove(descriptor);
+        if (TryGetFamilyFromDescriptor(descriptor, out var family))
+            FailedFontDescriptors.Remove(family);
+    }
+
+    public static bool ApplyFont(Application app, string? descriptor)
     {
         var normalized = NormalizeFont(descriptor);
+        LastApplyUsedFallback = false;
+        LastFontErrorMessage = null;
+        LastFontInstalledForUser = false;
+        LastFontInstalledFamily = null;
+
+        if (TryApplyFontCached(app, normalized, out var firstError))
+        {
+            LastAppliedFontDescriptor = normalized;
+            return true;
+        }
+
+        if (TryFixFileFontDescriptor(normalized, out var fixedDescriptor, out var familyFromFile))
+        {
+            if (!string.Equals(fixedDescriptor, normalized, StringComparison.OrdinalIgnoreCase) &&
+                TryApplyFontCached(app, fixedDescriptor, out _))
+            {
+                LastAppliedFontDescriptor = fixedDescriptor;
+                LastApplyUsedFallback = true;
+                return true;
+            }
+
+            // If the font is installed system-wide but the file loading fails, try family name only.
+            if (!string.IsNullOrWhiteSpace(familyFromFile))
+            {
+                if (TryApplyFontCached(app, familyFromFile, out _))
+                {
+                    LastAppliedFontDescriptor = familyFromFile;
+                    LastApplyUsedFallback = true;
+                    return true;
+                }
+
+                if (TryGetFilePathFromDescriptor(fixedDescriptor, out var filePath))
+                {
+                    if ((TryRegisterPrivateFontWindows(filePath) || TryRegisterSessionFontWindows(filePath)) &&
+                        TryApplyFontCached(app, familyFromFile, out _))
+                    {
+                        LastAppliedFontDescriptor = familyFromFile;
+                        LastApplyUsedFallback = true;
+                        return true;
+                    }
+                }
+            }
+        }
+
+        if (TryGetFamilyFromDescriptor(normalized, out var familyFromDescriptor) &&
+            TryApplyFontCached(app, familyFromDescriptor, out _))
+        {
+            LastAppliedFontDescriptor = familyFromDescriptor;
+            LastApplyUsedFallback = true;
+            return true;
+        }
+
+        if (TryGetFamilyFromDescriptor(normalized, out var fallbackFamily) &&
+            TryGetFilePathFromDescriptor(normalized, out var fallbackPath) &&
+            (TryRegisterPrivateFontWindows(fallbackPath) || TryRegisterSessionFontWindows(fallbackPath)) &&
+            TryApplyFontCached(app, fallbackFamily, out _))
+        {
+            LastAppliedFontDescriptor = fallbackFamily;
+            LastApplyUsedFallback = true;
+            return true;
+        }
+
+        if (TryGetFilePathFromDescriptor(normalized, out var installPath) &&
+            TryInstallFontForCurrentUser(installPath, out var installedFamily, out _))
+        {
+            if (TryApplyFontCached(app, installedFamily, out _))
+            {
+                LastAppliedFontDescriptor = installedFamily;
+                LastApplyUsedFallback = true;
+                LastFontInstalledForUser = true;
+                LastFontInstalledFamily = installedFamily;
+                return true;
+            }
+        }
+
+        if (firstError != null)
+        {
+            LastFontErrorMessage = firstError.Message;
+            Log.Warning(firstError, "Failed to apply font '{Font}'. Falling back to default.", normalized);
+        }
+        else
+            Log.Warning("Failed to apply font '{Font}'. Falling back to default.", normalized);
+        _ = TryApplyFont(app, DefaultFontDescriptor, out _);
+        LastAppliedFontDescriptor = DefaultFontDescriptor;
+        LastApplyUsedFallback = true;
+        return false;
+    }
+
+    public static bool TryBuildDescriptorFromFile(string filePath, out string descriptor)
+    {
+        descriptor = "";
+        if (string.IsNullOrWhiteSpace(filePath))
+            return false;
+
         try
         {
-            app.Resources["ThemeFontFamily"] = new FontFamily(normalized);
+            var uri = new Uri(filePath).AbsoluteUri;
+            if (!TryReadFontFamilyName(filePath, out var family))
+                return false;
+
+            descriptor = $"{uri}#{family}";
+            return true;
         }
         catch
         {
-            app.Resources["ThemeFontFamily"] = new FontFamily(DefaultFontDescriptor);
+            return false;
         }
+    }
+
+    private static bool TryApplyFontCached(Application app, string descriptor, out Exception? error)
+    {
+        error = null;
+        if (FailedFontDescriptors.Contains(descriptor))
+            return false;
+
+        var ok = TryApplyFont(app, descriptor, out error);
+        if (!ok)
+            FailedFontDescriptors.Add(descriptor);
+        return ok;
+    }
+
+    private static bool TryApplyFont(Application app, string descriptor, out Exception? error)
+    {
+        error = null;
+        try
+        {
+            var family = new FontFamily(descriptor);
+            var typeface = new Typeface(family);
+            _ = typeface.GlyphTypeface;
+            app.Resources["ThemeFontFamily"] = family;
+            return true;
+        }
+        catch (Exception e)
+        {
+            error = e;
+            return false;
+        }
+    }
+
+    private static bool TryFixFileFontDescriptor(string descriptor, out string fixedDescriptor, out string familyName)
+    {
+        fixedDescriptor = "";
+        familyName = "";
+        if (!Uri.TryCreate(descriptor, UriKind.Absolute, out var uri))
+            return false;
+
+        if (!uri.IsFile)
+            return false;
+
+        var path = uri.LocalPath;
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+            return false;
+
+        if (!TryReadFontFamilyName(path, out var family))
+            return false;
+
+        familyName = family;
+        var expected = $"{uri.GetLeftPart(UriPartial.Path)}#{family}";
+        fixedDescriptor = expected;
+        return true;
+    }
+
+    private static bool TryReadFontFamilyName(string filePath, out string familyName)
+    {
+        familyName = "";
+        try
+        {
+            using var stream = File.OpenRead(filePath);
+            using var reader = new BinaryReader(stream);
+            if (stream.Length < 12)
+                return false;
+
+            _ = ReadUInt32BE(reader); // sfnt version
+            var numTables = ReadUInt16BE(reader);
+            reader.ReadBytes(6); // searchRange, entrySelector, rangeShift
+
+            uint nameOffset = 0;
+            uint nameLength = 0;
+            for (var i = 0; i < numTables; i++)
+            {
+                var tagBytes = reader.ReadBytes(4);
+                if (tagBytes.Length < 4)
+                    return false;
+
+                var tag = Encoding.ASCII.GetString(tagBytes);
+                _ = ReadUInt32BE(reader); // checksum
+                var offset = ReadUInt32BE(reader);
+                var length = ReadUInt32BE(reader);
+
+                if (tag == "name")
+                {
+                    nameOffset = offset;
+                    nameLength = length;
+                }
+            }
+
+            if (nameOffset == 0 || nameLength == 0)
+                return false;
+
+            stream.Seek(nameOffset, SeekOrigin.Begin);
+            _ = ReadUInt16BE(reader); // format
+            var count = ReadUInt16BE(reader);
+            var stringOffset = ReadUInt16BE(reader);
+
+            var recordsStart = nameOffset + 6;
+            var storageStart = nameOffset + stringOffset;
+
+            string best = "";
+            var bestScore = -1;
+
+            for (var i = 0; i < count; i++)
+            {
+                stream.Seek(recordsStart + i * 12, SeekOrigin.Begin);
+                var platformId = ReadUInt16BE(reader);
+                var encodingId = ReadUInt16BE(reader);
+                var languageId = ReadUInt16BE(reader);
+                var nameId = ReadUInt16BE(reader);
+                var length = ReadUInt16BE(reader);
+                var offset = ReadUInt16BE(reader);
+
+                if (nameId != 1 || length == 0)
+                    continue;
+
+                stream.Seek(storageStart + offset, SeekOrigin.Begin);
+                var raw = reader.ReadBytes(length);
+                if (raw.Length == 0)
+                    continue;
+
+                string value;
+                if (platformId == 3)
+                {
+                    value = Encoding.BigEndianUnicode.GetString(raw);
+                }
+                else
+                {
+                    value = TryDecodeFallback(raw);
+                }
+
+                value = value.TrimEnd('\0').Trim();
+                if (value.Length == 0)
+                    continue;
+
+                var score = 0;
+                if (platformId == 3)
+                    score += 10;
+                if (platformId == 3 && languageId == 0x0409)
+                    score += 5;
+                if (encodingId == 1 || encodingId == 10)
+                    score += 1;
+
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    best = value;
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(best))
+                return false;
+
+            familyName = best;
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static string TryDecodeFallback(byte[] raw)
+    {
+        try
+        {
+            return Encoding.UTF8.GetString(raw);
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            return Encoding.GetEncoding(28591).GetString(raw); // Latin-1
+        }
+        catch
+        {
+            return Encoding.ASCII.GetString(raw);
+        }
+    }
+
+    private static ushort ReadUInt16BE(BinaryReader reader)
+    {
+        var b1 = reader.ReadByte();
+        var b2 = reader.ReadByte();
+        return (ushort)((b1 << 8) | b2);
+    }
+
+    private static uint ReadUInt32BE(BinaryReader reader)
+    {
+        var b1 = reader.ReadByte();
+        var b2 = reader.ReadByte();
+        var b3 = reader.ReadByte();
+        var b4 = reader.ReadByte();
+        return (uint)((b1 << 24) | (b2 << 16) | (b3 << 8) | b4);
+    }
+
+    private static bool TryGetFamilyFromDescriptor(string descriptor, out string familyName)
+    {
+        familyName = "";
+        if (!Uri.TryCreate(descriptor, UriKind.Absolute, out var uri))
+            return false;
+
+        var fragment = uri.Fragment;
+        if (string.IsNullOrWhiteSpace(fragment))
+            return false;
+
+        if (fragment.StartsWith("#", StringComparison.Ordinal))
+            fragment = fragment[1..];
+
+        familyName = Uri.UnescapeDataString(fragment).Trim();
+        return !string.IsNullOrWhiteSpace(familyName);
+    }
+
+    private static bool TryGetFilePathFromDescriptor(string descriptor, out string filePath)
+    {
+        filePath = "";
+        if (!Uri.TryCreate(descriptor, UriKind.Absolute, out var uri))
+            return false;
+
+        if (!uri.IsFile)
+            return false;
+
+        filePath = uri.LocalPath;
+        return !string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath);
+    }
+
+    public static void UnregisterPrivateFonts()
+    {
+        if (!OperatingSystem.IsWindows())
+            return;
+
+        foreach (var path in PrivateFontFiles)
+        {
+            _ = RemoveFontResourceEx(path, FR_PRIVATE, IntPtr.Zero);
+        }
+
+        PrivateFontFiles.Clear();
+
+        foreach (var path in SessionFontFiles)
+        {
+            _ = RemoveFontResourceEx(path, 0, IntPtr.Zero);
+        }
+
+        SessionFontFiles.Clear();
+    }
+
+    private static bool TryRegisterPrivateFontWindows(string filePath)
+    {
+        if (!OperatingSystem.IsWindows())
+            return false;
+
+        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            return false;
+
+        if (PrivateFontFiles.Contains(filePath))
+            return true;
+
+        var added = AddFontResourceEx(filePath, FR_PRIVATE, IntPtr.Zero);
+        if (added > 0)
+        {
+            PrivateFontFiles.Add(filePath);
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool TryRegisterSessionFontWindows(string filePath)
+    {
+        if (!OperatingSystem.IsWindows())
+            return false;
+
+        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            return false;
+
+        if (SessionFontFiles.Contains(filePath))
+            return true;
+
+        var added = AddFontResourceEx(filePath, 0, IntPtr.Zero);
+        if (added > 0)
+        {
+            SessionFontFiles.Add(filePath);
+            BroadcastFontChange();
+            return true;
+        }
+
+        return false;
+    }
+
+    private static void BroadcastFontChange()
+    {
+        const uint SMTO_ABORTIFHUNG = 0x0002;
+        _ = SendMessageTimeout(new IntPtr(HWND_BROADCAST), WM_FONTCHANGE, UIntPtr.Zero, IntPtr.Zero, SMTO_ABORTIFHUNG, 1000, out _);
+    }
+
+    private const uint FR_PRIVATE = 0x10;
+    private const uint WM_FONTCHANGE = 0x001D;
+    private const int HWND_BROADCAST = 0xFFFF;
+
+    [DllImport("gdi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern int AddFontResourceEx(string lpszFilename, uint fl, IntPtr pdv);
+
+    [DllImport("gdi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern bool RemoveFontResourceEx(string lpszFilename, uint fl, IntPtr pdv);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr SendMessageTimeout(IntPtr hWnd, uint msg, UIntPtr wParam, IntPtr lParam, uint flags, uint timeout, out UIntPtr result);
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr ShellExecute(IntPtr hwnd, string? lpOperation, string lpFile, string? lpParameters, string? lpDirectory, int nShowCmd);
+
+    public static void OpenFontInstallUI(string filePath)
+    {
+        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            return;
+
+        try
+        {
+            Log.Warning("Font install UI requested for {FontFile}", filePath);
+
+            if (OperatingSystem.IsWindows())
+            {
+                if (TryReadFontFamilyName(filePath, out var family) &&
+                    IsFontInstalledWindows(family, Path.GetFileName(filePath)))
+                {
+                    Log.Debug("Font already installed; skipping install UI for {FontFile}", filePath);
+                    return;
+                }
+
+                if (TryShellExecute(filePath, "install"))
+                    return;
+
+                if (TryShellExecute(filePath, "open"))
+                    return;
+
+                var systemDir = Environment.GetFolderPath(Environment.SpecialFolder.System);
+                var fontView = Path.Combine(systemDir, "fontview.exe");
+                if (File.Exists(fontView) && TryStartProcess(new ProcessStartInfo
+                    {
+                        FileName = fontView,
+                        ArgumentList = { filePath },
+                        UseShellExecute = true
+                    }, "fontview.exe"))
+                    return;
+
+                if (TryStartProcess(new ProcessStartInfo
+                    {
+                        FileName = "rundll32.exe",
+                        ArgumentList = { "shell32.dll,ShellExec_RunDLL", filePath },
+                        UseShellExecute = true
+                    }, "rundll32 ShellExec_RunDLL"))
+                    return;
+
+                if (TryStartProcess(new ProcessStartInfo
+                    {
+                        FileName = "rundll32.exe",
+                        ArgumentList = { "shell32.dll,OpenAs_RunDLL", filePath },
+                        UseShellExecute = true
+                    }, "rundll32 OpenAs_RunDLL"))
+                    return;
+
+                if (TryStartProcess(new ProcessStartInfo
+                    {
+                        FileName = filePath,
+                        Verb = "install",
+                        UseShellExecute = true
+                    }, "font install verb"))
+                    return;
+
+                if (TryStartProcess(new ProcessStartInfo
+                    {
+                        FileName = filePath,
+                        UseShellExecute = true
+                    }, "font open"))
+                    return;
+
+                if (TryStartProcess(new ProcessStartInfo
+                    {
+                        FileName = "explorer.exe",
+                        ArgumentList = { "/select," + filePath },
+                        UseShellExecute = true
+                    }, "explorer open"))
+                    return;
+
+                if (TryStartProcess(new ProcessStartInfo
+                    {
+                        FileName = "explorer.exe",
+                        ArgumentList = { "shell:fonts" },
+                        UseShellExecute = true
+                    }, "explorer shell:fonts"))
+                    return;
+
+                if (TryStartProcess(new ProcessStartInfo
+                    {
+                        FileName = "cmd.exe",
+                        ArgumentList = { "/c", "start", "\"\"", "ms-settings:fonts" },
+                        CreateNoWindow = true,
+                        UseShellExecute = false
+                    }, "ms-settings fonts"))
+                    return;
+
+                if (TryStartProcess(new ProcessStartInfo
+                    {
+                        FileName = "rundll32.exe",
+                        ArgumentList = { "shell32.dll,Control_RunDLL", "fonts" },
+                        UseShellExecute = true
+                    }, "rundll32 fonts"))
+                    return;
+
+                if (TryStartProcess(new ProcessStartInfo
+                    {
+                        FileName = "explorer.exe",
+                        ArgumentList = { filePath },
+                        UseShellExecute = true
+                    }, "explorer open file"))
+                    return;
+
+                if (TryStartProcess(new ProcessStartInfo
+                    {
+                        FileName = "cmd.exe",
+                        ArgumentList = { "/c", "start", "\"\"", filePath },
+                        CreateNoWindow = true,
+                        UseShellExecute = false
+                    }, "cmd start"))
+                    return;
+
+                if (TryStartProcess(new ProcessStartInfo
+                    {
+                        FileName = "control.exe",
+                        ArgumentList = { "/name", "Microsoft.Fonts" },
+                        UseShellExecute = true
+                    }, "fonts control panel"))
+                    return;
+
+                if (TryStartProcess(new ProcessStartInfo
+                    {
+                        FileName = "control.exe",
+                        ArgumentList = { "fonts" },
+                        UseShellExecute = true
+                    }, "control fonts"))
+                    return;
+
+                Log.Warning("All font install UI attempts failed for {FontFile}", filePath);
+                return;
+            }
+
+            if (OperatingSystem.IsMacOS())
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "open",
+                    ArgumentList = { filePath },
+                    UseShellExecute = false
+                });
+                return;
+            }
+
+            if (OperatingSystem.IsLinux() || OperatingSystem.IsFreeBSD())
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "xdg-open",
+                    ArgumentList = { filePath },
+                    UseShellExecute = false
+                });
+                return;
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Warning(e, "Failed to open font install UI for {FontFile}", filePath);
+        }
+    }
+
+    private static bool TryStartProcess(ProcessStartInfo psi, string label)
+    {
+        try
+        {
+            var p = Process.Start(psi);
+            if (p != null)
+            {
+                Log.Debug("Started {Label} for font install UI.", label);
+                return true;
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Warning(e, "Failed to start {Label} for font install UI.", label);
+        }
+
+        return false;
+    }
+
+    private static bool TryShellExecute(string filePath, string verb)
+    {
+        try
+        {
+            var result = ShellExecute(IntPtr.Zero, verb, filePath, null, null, 1);
+            if ((nint)result > 32)
+            {
+                Log.Debug("ShellExecute succeeded with verb '{Verb}' for {FontFile}", verb, filePath);
+                return true;
+            }
+
+            Log.Warning("ShellExecute failed with code {Code} for verb '{Verb}' on {FontFile}", (nint)result, verb, filePath);
+            return false;
+        }
+        catch (Exception e)
+        {
+            Log.Warning(e, "ShellExecute threw for verb '{Verb}' on {FontFile}", verb, filePath);
+            return false;
+        }
+    }
+
+    private static bool IsFontInstalledWindows(string familyName, string? fileName)
+    {
+        if (!OperatingSystem.IsWindows())
+            return false;
+
+        if (string.IsNullOrWhiteSpace(familyName) && string.IsNullOrWhiteSpace(fileName))
+            return false;
+
+        if (IsFontInstalledInRegistry(Registry.CurrentUser, familyName, fileName))
+            return true;
+
+        return IsFontInstalledInRegistry(Registry.LocalMachine, familyName, fileName);
+    }
+
+    private static bool IsFontInstalledInRegistry(RegistryKey root, string familyName, string? fileName)
+    {
+        try
+        {
+            using var key = root.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts", false);
+            if (key == null)
+                return false;
+
+            foreach (var valueName in key.GetValueNames())
+            {
+                if (!string.IsNullOrWhiteSpace(familyName) &&
+                    valueName.Contains(familyName, StringComparison.OrdinalIgnoreCase))
+                    return true;
+
+                if (fileName == null)
+                    continue;
+
+                var value = key.GetValue(valueName) as string;
+                if (value != null &&
+                    value.IndexOf(fileName, StringComparison.OrdinalIgnoreCase) >= 0)
+                    return true;
+            }
+        }
+        catch
+        {
+            return false;
+        }
+
+        return false;
+    }
+
+    private static bool TryInstallFontForCurrentUser(string filePath, out string familyName, out string error)
+    {
+        familyName = "";
+        error = "";
+
+        if (!OperatingSystem.IsWindows())
+        {
+            error = "Platform is not Windows.";
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+        {
+            error = "Font file not found.";
+            return false;
+        }
+
+        if (!TryReadFontFamilyName(filePath, out familyName))
+        {
+            error = "Failed to read font family.";
+            return false;
+        }
+
+        try
+        {
+            var fontsDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Microsoft", "Windows", "Fonts");
+            Directory.CreateDirectory(fontsDir);
+
+            var ext = Path.GetExtension(filePath);
+            var baseName = Path.GetFileNameWithoutExtension(filePath);
+            var targetFileName = $"{baseName}{ext}";
+            var targetPath = Path.Combine(fontsDir, targetFileName);
+
+            if (File.Exists(targetPath))
+            {
+                if (!FilesEqual(filePath, targetPath))
+                {
+                    var hash = GetShortHash(filePath);
+                    targetFileName = $"{baseName}-{hash}{ext}";
+                    targetPath = Path.Combine(fontsDir, targetFileName);
+                }
+            }
+
+            if (!File.Exists(targetPath))
+                File.Copy(filePath, targetPath, overwrite: false);
+
+            using var key = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(
+                @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts");
+
+            var valueName = $"{familyName} (TrueType)";
+            key?.SetValue(valueName, targetFileName, Microsoft.Win32.RegistryValueKind.String);
+
+            _ = AddFontResourceEx(targetPath, 0, IntPtr.Zero);
+            BroadcastFontChange();
+            return true;
+        }
+        catch (Exception e)
+        {
+            error = e.Message;
+            return false;
+        }
+    }
+
+    private static bool FilesEqual(string a, string b)
+    {
+        var ai = new FileInfo(a);
+        var bi = new FileInfo(b);
+        if (ai.Length != bi.Length)
+            return false;
+
+        const int bufSize = 81920;
+        var bufA = new byte[bufSize];
+        var bufB = new byte[bufSize];
+        using var fa = File.OpenRead(a);
+        using var fb = File.OpenRead(b);
+        while (true)
+        {
+            var ra = fa.Read(bufA, 0, bufSize);
+            var rb = fb.Read(bufB, 0, bufSize);
+            if (ra != rb)
+                return false;
+            if (ra == 0)
+                return true;
+            for (var i = 0; i < ra; i++)
+            {
+                if (bufA[i] != bufB[i])
+                    return false;
+            }
+        }
+    }
+
+    private static string GetShortHash(string filePath)
+    {
+        using var stream = File.OpenRead(filePath);
+        using var sha = System.Security.Cryptography.SHA256.Create();
+        var hash = sha.ComputeHash(stream);
+        return Convert.ToHexString(hash.AsSpan(0, 4));
     }
 
     public static string NormalizeFont(string? descriptor)

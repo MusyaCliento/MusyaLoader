@@ -100,6 +100,7 @@ public sealed class UrlFallbackSet
                 triedWithoutProxy = true;
                 LauncherProxyRuntimeState.DisableLauncherProxyForSession = true;
                 LauncherProxyRuntimeState.DisableUpdateProxyForSession = true;
+                LauncherProxyRuntimeState.DisableBypassProxyForSession = true;
                 Log.Warning("Detected SOCKS auth mismatch. Launcher proxy is disabled for this session and request will be retried directly.");
             }
         }

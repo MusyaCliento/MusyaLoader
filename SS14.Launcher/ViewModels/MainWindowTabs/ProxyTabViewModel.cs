@@ -79,6 +79,18 @@ public sealed class ProxyTabViewModel : MainWindowTabViewModel
         }
     }
 
+    public bool ProxyBypassRegionEnabled
+    {
+        get => _cfg.GetCVar(CVars.LauncherProxyBypassRegionEnabled);
+        set
+        {
+            _cfg.SetCVar(CVars.LauncherProxyBypassRegionEnabled, value);
+            _cfg.CommitConfig();
+            ResetRuntimeProxyBypass();
+            OnPropertyChanged(nameof(ProxyBypassRegionEnabled));
+        }
+    }
+
     public bool ProxyGuardGameLaunch
     {
         get => _cfg.GetCVar(CVars.LauncherProxyGuardGameLaunch);

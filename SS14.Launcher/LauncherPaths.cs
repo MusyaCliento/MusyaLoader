@@ -35,6 +35,7 @@ public static class LauncherPaths
     public static readonly string PathPublicKey = Path.Combine(DirLauncherInstall, "signing_key");
     public static readonly string PathContentDb = Path.Combine(DirLocalData, "content.db");
     public static readonly string PathOverrideAssetsDb = Path.Combine(DirLocalData, "override_assets.db");
+    public static readonly string PathRobustBuildManifestCache = Path.Combine(DirLocalData, "robust_build_manifest.json");
 
     // MarseyPaths
     public static readonly string DirMarsey = Path.Combine(DirLauncherInstall, MarseyVars.MarseyFolder);

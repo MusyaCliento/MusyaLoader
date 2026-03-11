@@ -29,6 +29,7 @@ using SS14.Launcher.Models.OverrideAssets;
 using SS14.Launcher.Utility;
 using TerraFX.Interop.Windows;
 using LogEventLevel = Serilog.Events.LogEventLevel;
+using System.Net.Http;
 
 namespace SS14.Launcher;
 
@@ -225,36 +226,7 @@ internal static class Program
     {
         var locator = Locator.CurrentMutable;
 
-        var dynamicProxy = new DynamicSocks5WebProxy(cfg);
-        if (cfg.GetCVar(CVars.LauncherProxyEnabled) &&
-            Socks5ProxyHelper.TryReadProxyValues(cfg, out var initialProxy, out _))
-        {
-            using var startupProxyCts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-            var startupProxyProbe = Socks5Probe.ProbeHandshakeAsync(initialProxy, startupProxyCts.Token)
-                .GetAwaiter().GetResult();
-            if (startupProxyProbe.Ok)
-            {
-                Log.Information(
-                    "SOCKS5 dynamic proxy is enabled for launcher HTTP: {Host}:{Port} (handshake OK, profile changes apply without restart)",
-                    initialProxy.Host,
-                    initialProxy.Port);
-            }
-            else
-            {
-                LauncherProxyRuntimeState.DisableLauncherProxyForSession = true;
-                LauncherProxyRuntimeState.DisableUpdateProxyForSession = true;
-                LauncherProxyRuntimeState.UnavailableProxyMessage =
-                    $"Could not initialize SOCKS5 proxy {initialProxy.Host}:{initialProxy.Port}. Error: {startupProxyProbe.Error}";
-
-                Log.Warning(
-                    "Configured proxy failed SOCKS5 startup check ({Host}:{Port}): {Error}. Proxy is disabled for this session.",
-                    initialProxy.Host,
-                    initialProxy.Port,
-                    startupProxyProbe.Error);
-            }
-        }
-
-        var http = HappyEyeballsHttp.CreateHttpClient(proxy: dynamicProxy);
+        var http = new HttpClient(new ProxyRoutingHandler(cfg));
         http.DefaultRequestHeaders.UserAgent.Add(
             new ProductInfoHeaderValue(LauncherVersion.Name, LauncherVersion.Version?.ToString()));
         http.DefaultRequestHeaders.Add("SS14-Launcher-Fingerprint", "" /* Вместо cfg.Fingerprint.ToString()*/);
