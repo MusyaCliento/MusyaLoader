@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -105,11 +106,10 @@ public sealed partial class EngineManagerDynamic
             _cachedManifestLastModified = response.Content.Headers.LastModified;
 
             _cachedRobustVersionInfo =
-                await ConfigConstants.RobustBuildsManifest.GetFromJsonAsync<Dictionary<string, VersionInfo>>(
-                    _http, timeoutCts.Token);
+                await response.Content.ReadFromJsonAsync<Dictionary<string, VersionInfo>>(timeoutCts.Token)
+                ?? throw new InvalidOperationException("Robust manifest response was empty.");
 
-            if (_cachedRobustVersionInfo != null)
-                SaveRobustManifestCache(_cachedRobustVersionInfo);
+            SaveRobustManifestCache(_cachedRobustVersionInfo);
         }
         catch (OperationCanceledException e) when (!cancel.IsCancellationRequested && timeoutCts.IsCancellationRequested)
         {
@@ -143,6 +143,25 @@ public sealed partial class EngineManagerDynamic
         }
 
         _robustCacheValidUntil = _manifestStopwatch.Elapsed + ConfigConstants.RobustManifestCacheTime;
+    }
+
+    private static TimeSpan GetManifestCacheDuration(HttpResponseMessage? response)
+    {
+        if (response?.Headers.CacheControl?.NoStore == true || response?.Headers.CacheControl?.NoCache == true)
+            return TimeSpan.Zero;
+
+        var maxAge = response?.Headers.CacheControl?.MaxAge;
+        if (maxAge.HasValue)
+            return maxAge.Value;
+
+        if (response?.Content.Headers.Expires is { } expires)
+        {
+            var delta = expires - DateTimeOffset.UtcNow;
+            if (delta > TimeSpan.Zero)
+                return delta;
+        }
+
+        return ConfigConstants.RobustManifestCacheTime;
     }
 
     private static bool TryLoadRobustManifestCache(out Dictionary<string, VersionInfo>? cached)
