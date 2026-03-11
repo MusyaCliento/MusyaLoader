@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
+using Microsoft.Win32;
 using Serilog;
 using SQLitePCL;
 using X86Aes = System.Runtime.Intrinsics.X86.Aes;
@@ -138,7 +140,9 @@ internal static class LauncherDiagnostics
                 return name;
         }
 
-        // TODO: ask OS as fallback for when x86 CPUID isn't available on Windows and Linux.
+        var osName = GetProcessorModelFromOs();
+        if (osName != null)
+            return osName;
 
         return "Unknown processor model";
     }
@@ -189,6 +193,56 @@ internal static class LauncherDiagnostics
 
             return Encoding.UTF8.GetString(brand).TrimEnd();
         }
+    }
+
+    private static string? GetProcessorModelFromOs()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            try
+            {
+                using var key = Registry.LocalMachine.OpenSubKey(
+                    @"HARDWARE\DESCRIPTION\System\CentralProcessor\0",
+                    writable: false);
+                var value = key?.GetValue("ProcessorNameString") as string;
+                if (!string.IsNullOrWhiteSpace(value))
+                    return value.Trim();
+            }
+            catch (Exception e)
+            {
+                Log.Debug(e, "Failed to read CPU model from registry");
+            }
+
+            var env = Environment.GetEnvironmentVariable("PROCESSOR_IDENTIFIER");
+            if (!string.IsNullOrWhiteSpace(env))
+                return env.Trim();
+        }
+
+        if (OperatingSystem.IsLinux())
+        {
+            try
+            {
+                foreach (var line in File.ReadLines("/proc/cpuinfo"))
+                {
+                    if (!line.StartsWith("model name", StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    var sep = line.IndexOf(':');
+                    if (sep < 0)
+                        continue;
+
+                    var name = line[(sep + 1)..].Trim();
+                    if (!string.IsNullOrWhiteSpace(name))
+                        return name;
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Debug(e, "Failed to read CPU model from /proc/cpuinfo");
+            }
+        }
+
+        return null;
     }
 
     [DllImport("libc", SetLastError = true)]

@@ -155,7 +155,12 @@ public static class Helpers
 
     public static unsafe void MarkDirectoryCompress(string path)
     {
-        // TODO: Linux: chattr +c
+        if (OperatingSystem.IsLinux())
+        {
+            TryEnableLinuxDirectoryCompression(path);
+            return;
+        }
+
         if (!OperatingSystem.IsWindows())
             return;
 
@@ -184,6 +189,43 @@ public static class Helpers
                 null);
 
             Win.CloseHandle(handle);
+        }
+    }
+
+    private static void TryEnableLinuxDirectoryCompression(string path)
+    {
+        try
+        {
+            var psi = new ProcessStartInfo("chattr")
+            {
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
+                UseShellExecute = false
+            };
+            psi.ArgumentList.Add("+c");
+            psi.ArgumentList.Add(path);
+
+            using var proc = Process.Start(psi);
+            if (proc == null)
+            {
+                Log.Debug("Failed to start chattr for {Path}", path);
+                return;
+            }
+
+            if (!proc.WaitForExit(2000))
+            {
+                Log.Debug("chattr timed out for {Path}", path);
+                return;
+            }
+
+            if (proc.ExitCode != 0)
+            {
+                Log.Debug("chattr exited with code {ExitCode} for {Path}", proc.ExitCode, path);
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Debug(e, "Failed to enable chattr +c for {Path}", path);
         }
     }
 
