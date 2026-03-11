@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Threading;
 using DynamicData;
@@ -16,13 +17,6 @@ namespace SS14.Launcher.Models.Logins;
 // Checking and refreshing tokens, marking accounts as "need signing in again", etc...
 public sealed class LoginManager : ReactiveObject
 {
-    // TODO: If the user tries to connect to a server or such
-    // on the split second interval that the launcher does a token refresh
-    // (once a week, if you leave it open for long).
-    // there is a possibility the token used by said action will be invalid because it's actively being replaced
-    // oh well.
-    // Do I really care to fix that?
-
     private readonly DataManager _cfg;
     private readonly AuthApi _authApi;
 
@@ -31,6 +25,9 @@ public sealed class LoginManager : ReactiveObject
     private Guid? _activeLoginId;
 
     private readonly IObservableCache<ActiveLoginData, Guid> _logins;
+    private readonly SemaphoreSlim _tokenRefreshSemaphore = new(1, 1);
+    private readonly HashSet<Guid> _refreshRetryPending = new();
+    private readonly object _refreshRetryLock = new();
 
     public LoggedInAccount? GuestAccount { get; private set; }
 
@@ -147,37 +144,44 @@ public sealed class LoginManager : ReactiveObject
         const int delayStart = 2;
         const int delayValue = 200;
 
-        await Task.WhenAll(_logins.Items.Select(async (l, i) =>
+        await _tokenRefreshSemaphore.WaitAsync();
+        try
         {
-            if (l.Status == AccountLoginStatus.Expired)
+            await Task.WhenAll(_logins.Items.Select(async (l, i) =>
             {
-                // Literally don't even bother we already know it's dead and the user has to solve it.
-                Log.Debug("Token for {login} is already expired", l.LoginInfo);
-                return;
-            }
+                if (l.Status == AccountLoginStatus.Expired)
+                {
+                    // Literally don't even bother we already know it's dead and the user has to solve it.
+                    Log.Debug("Token for {login} is already expired", l.LoginInfo);
+                    return;
+                }
 
-            if (l.LoginInfo.Token.IsTimeExpired())
-            {
-                // Oh hey, time expiry.
-                Log.Debug("Token for {login} expired due to time", l.LoginInfo);
-                l.SetStatus(AccountLoginStatus.Expired);
-                return;
-            }
+                if (l.LoginInfo.Token.IsTimeExpired())
+                {
+                    // Oh hey, time expiry.
+                    Log.Debug("Token for {login} expired due to time", l.LoginInfo);
+                    l.SetStatus(AccountLoginStatus.Expired);
+                    return;
+                }
 
-            if (i > delayStart)
-                await Task.Delay(delayValue * (i - delayStart));
+                if (i > delayStart)
+                    await Task.Delay(delayValue * (i - delayStart));
 
-            try
-            {
-                await UpdateSingleAccountStatus(l);
-            }
-            catch (AuthApiException e)
-            {
-                // TODO: Maybe retry to refresh tokens sooner if an error occured.
-                // Ignore, I guess.
-                Log.Warning(e, "AuthApiException while trying to refresh token for {login}", l.LoginInfo);
-            }
-        }));
+                try
+                {
+                    await UpdateSingleAccountStatusCore(l);
+                }
+                catch (AuthApiException e)
+                {
+                    Log.Warning(e, "AuthApiException while trying to refresh token for {login}", l.LoginInfo);
+                    ScheduleRefreshRetry(l);
+                }
+            }));
+        }
+        finally
+        {
+            _tokenRefreshSemaphore.Release();
+        }
     }
 
     // Marsey Ghost
@@ -207,10 +211,23 @@ public sealed class LoginManager : ReactiveObject
         if (account is GuestAccount || account.Status == AccountLoginStatus.Guest)
             return Task.CompletedTask;
 
-        return UpdateSingleAccountStatus((ActiveLoginData) account);
+        return UpdateSingleAccountStatusLocked((ActiveLoginData) account);
     }
 
-    private async Task UpdateSingleAccountStatus(ActiveLoginData data)
+    private async Task UpdateSingleAccountStatusLocked(ActiveLoginData data)
+    {
+        await _tokenRefreshSemaphore.WaitAsync();
+        try
+        {
+            await UpdateSingleAccountStatusCore(data);
+        }
+        finally
+        {
+            _tokenRefreshSemaphore.Release();
+        }
+    }
+
+    private async Task UpdateSingleAccountStatusCore(ActiveLoginData data)
     {
         // Marsey Ghost patch: skip guest accounts
         if (data.Status == AccountLoginStatus.Guest) return;
@@ -240,6 +257,41 @@ public sealed class LoginManager : ReactiveObject
             Log.Debug("Token for {login} still valid? {valid}", data.LoginInfo, valid);
             data.SetStatus(valid ? AccountLoginStatus.Available : AccountLoginStatus.Expired);
         }
+    }
+
+    public async Task WaitForTokenRefreshAsync(CancellationToken cancel = default)
+    {
+        await _tokenRefreshSemaphore.WaitAsync(cancel);
+        _tokenRefreshSemaphore.Release();
+    }
+
+    private void ScheduleRefreshRetry(ActiveLoginData data)
+    {
+        lock (_refreshRetryLock)
+        {
+            if (!_refreshRetryPending.Add(data.LoginInfo.UserId))
+                return;
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(TimeSpan.FromMinutes(5));
+                await UpdateSingleAccountStatusLocked(data);
+            }
+            catch (Exception e)
+            {
+                Log.Debug(e, "Token refresh retry failed for {login}", data.LoginInfo);
+            }
+            finally
+            {
+                lock (_refreshRetryLock)
+                {
+                    _refreshRetryPending.Remove(data.LoginInfo.UserId);
+                }
+            }
+        });
     }
 
     private sealed class ActiveLoginData : LoggedInAccount

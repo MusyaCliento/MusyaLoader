@@ -176,6 +176,7 @@ public sealed partial class Updater : ReactiveObject
             );
 
             long versionId;
+            long? baseBuildId = null;
             if (existing == null)
             {
                 versionId = con.ExecuteScalar<long>(
@@ -197,7 +198,7 @@ public sealed partial class Updater : ReactiveObject
 
                     // We have a base build to download.
                     // Copy it into the new AnonymousContentBundle version before loading the rest of the zip contents.
-                    var baseBuildId = await TouchOrDownloadContentUpdate(
+                    baseBuildId = await TouchOrDownloadContentUpdate(
                         metadata.GetBaseBuildInformation(),
                         con,
                         moduleManifest,
@@ -232,8 +233,14 @@ public sealed partial class Updater : ReactiveObject
                 Log.Debug("Manifest hash of new version is {Hash}", Convert.ToHexString(manifestHash));
                 Log.Debug("Resolving content dependencies...");
 
-                // TODO: This could copy from base build modules in certain cases.
-                await ResolveContentDependencies(con, versionId, metadata.EngineVersion, moduleManifest);
+                var includeManifestModules = true;
+                if (baseBuildId != null && !HasManifestModules(con, versionId))
+                {
+                    CopyModuleDependenciesFromBaseBuild(con, baseBuildId.Value, versionId);
+                    includeManifestModules = false;
+                }
+
+                await ResolveContentDependencies(con, versionId, metadata.EngineVersion, moduleManifest, includeManifestModules);
             }
             else
             {
@@ -706,7 +713,6 @@ public sealed partial class Updater : ReactiveObject
         // Store the created version ID so we can manually delete it later if necessary.
         state.MadeContentVersion = versionId;
 
-        // TODO: Download URL
         byte[] manifestHash;
         if (!string.IsNullOrEmpty(buildInfo.ManifestUrl)
             && !string.IsNullOrEmpty(buildInfo.ManifestDownloadUrl)
@@ -740,7 +746,8 @@ public sealed partial class Updater : ReactiveObject
         SqliteConnection con,
         long versionId,
         string engineVersion,
-        Lazy<Task<EngineModuleManifest>> moduleManifest)
+        Lazy<Task<EngineModuleManifest>> moduleManifest,
+        bool includeManifestModules = true)
     {
         // Engine version.
         con.Execute(
@@ -752,6 +759,9 @@ public sealed partial class Updater : ReactiveObject
             });
 
         Log.Debug("Inserting dependency: {ModuleName} {ModuleVersion}", "Robust", engineVersion);
+
+        if (!includeManifestModules)
+            return;
 
         // If we have a manifest file, load module dependencies from manifest file.
         if (LoadManifestData(con, versionId) is not { } manifestData)
@@ -780,6 +790,27 @@ public sealed partial class Updater : ReactiveObject
 
             Log.Debug("Inserting dependency: {ModuleName} {ModuleVersion}", module, version);
         }
+    }
+
+    private static bool HasManifestModules(SqliteConnection con, long versionId)
+    {
+        var manifest = LoadManifestData(con, versionId);
+        return manifest is { Modules.Length: > 0 };
+    }
+
+    private static void CopyModuleDependenciesFromBaseBuild(SqliteConnection con, long baseBuildId, long versionId)
+    {
+        con.Execute(@"
+            INSERT INTO ContentEngineDependency (VersionId, ModuleName, ModuleVersion)
+            SELECT @NewVersion, ModuleName, ModuleVersion
+            FROM ContentEngineDependency
+            WHERE VersionId = @OldVersion
+                AND ModuleName != 'Robust'",
+            new
+            {
+                NewVersion = versionId,
+                OldVersion = baseBuildId
+            });
     }
 
     private static void EnsureBuffer(ref byte[] buf, int needsFit)

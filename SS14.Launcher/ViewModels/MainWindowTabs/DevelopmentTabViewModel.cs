@@ -1,3 +1,5 @@
+using System;
+using System.ComponentModel;
 using ReactiveUI;
 using Splat;
 using SS14.Launcher.Localization;
@@ -15,11 +17,21 @@ public sealed class DevelopmentTabViewModel : MainWindowTabViewModel
     {
         Cfg = Locator.Current.GetRequiredService<DataManager>();
 
-        // TODO: This sucks and leaks.
-        Cfg.GetCVarEntry(CVars.EngineOverrideEnabled).PropertyChanged += (sender, args) =>
+        var entry = Cfg.GetCVarEntry(CVars.EngineOverrideEnabled);
+        var weakThis = new WeakReference<DevelopmentTabViewModel>(this);
+        PropertyChangedEventHandler? handler = null;
+        handler = (_, args) =>
         {
-            this.RaisePropertyChanged(nameof(Name));
+            if (!weakThis.TryGetTarget(out var target))
+            {
+                entry.PropertyChanged -= handler;
+                return;
+            }
+
+            if (args.PropertyName == nameof(ICVarEntry<bool>.Value))
+                target.RaisePropertyChanged(nameof(Name));
         };
+        entry.PropertyChanged += handler;
     }
 
     public override string Name => Cfg.GetCVar(CVars.EngineOverrideEnabled)

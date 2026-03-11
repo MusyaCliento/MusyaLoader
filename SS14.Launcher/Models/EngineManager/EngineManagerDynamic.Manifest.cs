@@ -23,6 +23,8 @@ public sealed partial class EngineManagerDynamic
 
     private Dictionary<string, VersionInfo>? _cachedRobustVersionInfo;
     private TimeSpan _robustCacheValidUntil;
+    private EntityTagHeaderValue? _cachedManifestEtag;
+    private DateTimeOffset? _cachedManifestLastModified;
 
     /// <summary>
     /// Look up information about an engine version.
@@ -71,14 +73,37 @@ public sealed partial class EngineManagerDynamic
 
     private async Task UpdateBuildManifest(CancellationToken cancel)
     {
-        // TODO: If-Modified-Since and If-None-Match request conditions.
-
         Log.Debug("Loading manifest from {manifestUrl}...", ConfigConstants.RobustBuildsManifest);
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancel);
         timeoutCts.CancelAfter(ManifestLoadTimeout);
 
         try
         {
+            using var response = await ConfigConstants.RobustBuildsManifest.SendAsync(
+                _http,
+                url =>
+                {
+                    var req = new HttpRequestMessage(HttpMethod.Get, url);
+                    if (_cachedManifestEtag != null)
+                        req.Headers.IfNoneMatch.Add(_cachedManifestEtag);
+                    if (_cachedManifestLastModified != null)
+                        req.Headers.IfModifiedSince = _cachedManifestLastModified;
+                    return req;
+                },
+                timeoutCts.Token);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.NotModified && _cachedRobustVersionInfo != null)
+            {
+                Log.Debug("Manifest not modified, using cached copy");
+                _robustCacheValidUntil = _manifestStopwatch.Elapsed + GetManifestCacheDuration(response);
+                return;
+            }
+
+            response.EnsureSuccessStatusCode();
+
+            _cachedManifestEtag = response.Headers.ETag;
+            _cachedManifestLastModified = response.Content.Headers.LastModified;
+
             _cachedRobustVersionInfo =
                 await ConfigConstants.RobustBuildsManifest.GetFromJsonAsync<Dictionary<string, VersionInfo>>(
                     _http, timeoutCts.Token);

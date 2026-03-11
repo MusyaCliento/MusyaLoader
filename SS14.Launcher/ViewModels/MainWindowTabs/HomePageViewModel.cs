@@ -10,8 +10,10 @@ using DynamicData.Alias;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
+using Serilog;
 using Splat;
 using Marsey.Config;
+using SS14.Launcher;
 using SS14.Launcher.Localization;
 using SS14.Launcher.Models.Data;
 using SS14.Launcher.Models.ServerStatus;
@@ -102,8 +104,23 @@ public class HomePageViewModel : MainWindowTabViewModel
         catch (ArgumentException)
         {
             // Happens if address already a favorite, so ignore.
-            // TODO: Give a popup to the user?
+            ShowFavoriteAlreadyExists();
         }
+    }
+
+    private static void ShowFavoriteAlreadyExists()
+    {
+        const string message = "That server is already in your favorites.";
+        const string caption = "Favorite Already Added";
+
+        if (OperatingSystem.IsWindows())
+        {
+            Helpers.MessageBoxHelper(message, caption, 0);
+            return;
+        }
+
+        // Cross-platform fallback: just log.
+        Serilog.Log.Warning("{Message}", message);
     }
 
     private bool TryGetWindow([NotNullWhen(true)] out Window? window)
