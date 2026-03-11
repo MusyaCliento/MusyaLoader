@@ -137,6 +137,7 @@ public class MarseyPatcher
 
     private void Afterparty()
     {
+        // TODO: Test if GameAssemblies.ClientInitialized works here
         while (!GameAssemblies.ClientInitialized()) // Wait until EntryPoint is just about to start
         {
             Thread.Sleep(125);

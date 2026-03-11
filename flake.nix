@@ -8,7 +8,7 @@
     let
       forAllSystems =
         function:
-        nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ]
+        nixpkgs.lib.genAttrs [ "x86_64-linux" ] # TODO: aarch64-linux support
           (system: function system (import nixpkgs { inherit system; }));
     in
     {

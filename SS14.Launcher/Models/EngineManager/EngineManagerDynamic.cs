@@ -169,7 +169,7 @@ public sealed partial class EngineManagerDynamic : IEngineManager
 
         Log.Debug("Selected module {ModuleName} {ModuleVersion}", moduleName, moduleVersion);
 
-        var alreadyInstalled = _cfg.HasEngineModule(moduleName, moduleVersion);
+        var alreadyInstalled = _cfg.EngineModules.Any(m => m.Name == moduleName && m.Version == moduleVersion);
 
         if (alreadyInstalled)
         {

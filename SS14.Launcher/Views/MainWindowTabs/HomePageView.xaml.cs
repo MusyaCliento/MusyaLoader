@@ -4,7 +4,6 @@ using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
 using Serilog;
-using SS14.Launcher;
 using SS14.Launcher.ViewModels;
 using SS14.Launcher.ViewModels.MainWindowTabs;
 
@@ -68,24 +67,10 @@ public partial class HomePageView : UserControl
         using var file = result[0];
         if (!mainVm.IsContentBundleDropValid(file))
         {
-            ReportInvalidContentBundle();
+            // TODO: Report this nicely.
             return;
         }
 
         ConnectingViewModel.StartContentBundle(mainVm, file);
-    }
-
-    private static void ReportInvalidContentBundle()
-    {
-        const string message = "That file isn't a valid content bundle or replay.";
-        const string caption = "Invalid Bundle";
-
-        if (OperatingSystem.IsWindows())
-        {
-            Helpers.MessageBoxHelper(message, caption, 0);
-            return;
-        }
-
-        Log.Warning("{Message}", message);
     }
 }
