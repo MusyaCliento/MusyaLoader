@@ -64,8 +64,10 @@ Space Station 14 launcher fork with client-side patching and resource pack suppo
 2. Клонировать репозиторий с сабмодулями:
    `git clone --recurse-submodules https://github.com/MusyaCliento/MusyaLoader.git`
 3. Собрать:
-   `python publish.py`
-4. Распаковать архив из `PublishFiles` и запустить.
+   `python publish.py windows --x64-only`
+   `python publish.py linux --x64-only`
+   `python publish.py osx`
+4. Распаковать архив из `MusyaLoader_YourOS.zip` и запустить.
 
 ### Resource Packs: документация
 
@@ -184,7 +186,9 @@ Resources/
 2. Clone with submodules:
    `git clone --recurse-submodules https://github.com/MusyaCliento/MusyaLoader.git`
 3. Build:
-   `python publish.py`
+   `python publish.py windows --x64-only`
+   `python publish.py linux --x64-only`
+   `python publish.py osx`
 4. Unzip from `PublishFiles` and run.
 
 ### Resource Packs: documentation
