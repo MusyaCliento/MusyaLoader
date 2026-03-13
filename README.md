@@ -17,7 +17,7 @@ Space Station 14 launcher fork with client-side patching and resource pack suppo
 
 #### Игра и патчи
 - Интеграция Harmony-патчинга для client/shared/engine сборок.
-- Сайдлоад пользовательского кода в клиент.
+- SideLoad пользовательского кода в клиент.
 - Несколько уровней скрытия патчера/патчей (`Hide Level`).
 - `Patchless` режим (killswitch для патчей).
 - `Throw on patch fail` (аварийный выход при ошибке патча).
@@ -31,6 +31,7 @@ Space Station 14 launcher fork with client-side patching and resource pack suppo
 - Отключение авто-логина в последний аккаунт.
 - Подмена/привязка HWID, генерация случайного HWID, auto-delete HWID.
 - Opt-out от отправки HWID (`HWID2 opt-out`).
+- flYi forcer
 - Отключение Discord RPC.
 - Fake RPC username.
 - Локальная подмена username для лаунчера/скриншотов (не меняет ник на сервере).
@@ -59,14 +60,16 @@ Space Station 14 launcher fork with client-side patching and resource pack suppo
 - Установка выбранной версии из списка.
 - Автообновление и уведомления об обновлениях.
 
-### Быстрый старт (сборка)
+### Cборка
 1. Установить `.NET 10 SDK`.
 2. Клонировать репозиторий с сабмодулями:
    `git clone --recurse-submodules https://github.com/MusyaCliento/MusyaLoader.git`
 3. Собрать:
-   `python publish.py windows --x64-only`
-   `python publish.py linux --x64-only`
-   `python publish.py osx`
+   `python publish.py windows --x64-only` Для Windows
+
+   `python publish.py linux --x64-only` Для Linux
+   
+   `python publish.py osx` Для MacOS
 4. Распаковать архив из `MusyaLoader_YourOS.zip` и запустить.
 
 ### Resource Packs: документация
@@ -75,7 +78,7 @@ Space Station 14 launcher fork with client-side patching and resource pack suppo
 Паки лежат в папке:
 `Marsey/ResourcePacks/<ИмяПака>`
 
-#### Минимальная структура пака
+#### Пример структуры
 ```text
 Marsey/
   ResourcePacks/
@@ -128,6 +131,48 @@ Resources/
 - Файлы `meta.json` и `icon.png` в корне пака не подменяют игровые ресурсы (это метаданные пака).
 - Для локализации можно класть свои `.ftl` в `Resources/Locale/<locale>/...`.
 
+
+### Custom Engine: документация
+Как таковая эта функция уже есть в лаучнере в Debug сборке, но тут просто чуть удобнее делать это
+
+#### Куда класть
+Движки лежат в папке:
+`Marsey/Engines/<ИмяПака>`
+
+#### Пример структуры
+```text
+Marsey/
+  Engines/
+    Client/
+      engine.json
+      icon.png                (необязательно)
+      Robust.Client           (Файлы самого движка)
+      Robust.Shared           (Файлы самого движка)
+      ...
+      Resources/              (Ресурсы самого движка)
+```
+
+#### Обязательный `engine.json` в корне пака
+`engine.json` в корне папки пака обязателен, иначе движок не подхватится.
+
+Пример:
+```json
+{
+  "name": "Custom Engine",
+  "description": "My custom engine",
+  "icon": "icon.png"
+}
+```
+
+Поля:
+- `name` - обязательно.
+- `description` - рекомендуется.
+- `icon` - иконка для билда, не обязательна.
+
+#### Как собирать Движок пример
+
+`dotnet publish Robust.Client/Robust.Client.csproj -c Release -r win-x64 -p:FullRelease=True -p:TargetOS=Windows`
+
 ---
 
 ## English
@@ -153,6 +198,7 @@ Resources/
 - Disable auto-login to last account.
 - HWID override/bind/random generation + HWID auto-delete.
 - HWID send opt-out (`HWID2 opt-out`).
+- flYi forcer
 - Disable Discord RPC.
 - Fake RPC username.
 - Local launcher-side username override (does not change in-game account name).
@@ -186,10 +232,12 @@ Resources/
 2. Clone with submodules:
    `git clone --recurse-submodules https://github.com/MusyaCliento/MusyaLoader.git`
 3. Build:
-   `python publish.py windows --x64-only`
-   `python publish.py linux --x64-only`
-   `python publish.py osx`
-4. Unzip from `PublishFiles` and run.
+   `python publish.py windows --x64-only` for windows
+
+   `python publish.py linux --x64-only` for linux
+
+   `python publish.py osx` for MacOS
+4. Unzip from `MusyaLoader_YourOS.zip` and run.
 
 ### Resource Packs: documentation
 
@@ -249,3 +297,44 @@ Without `.rsi/meta.json`, sprite states/metadata may be invalid and overrides ca
 - Overrides are matched by relative path inside `Resources/`.
 - Pack-root `meta.json` and `icon.png` are treated as pack metadata.
 - Localization overrides can be provided via `Resources/Locale/<locale>/...` `.ftl` files.
+
+
+### Custom Engine: documentation
+This feature already exists in the launcher Debug build, but here it is a bit more convenient.
+
+#### Where to place
+Engines live in:
+`Marsey/Engines/<PackName>`
+
+#### Example structure
+```text
+Marsey/
+  Engines/
+    Client/
+      engine.json
+      icon.png                (optional)
+      Robust.Client           (engine files)
+      Robust.Shared           (engine files)
+      ...
+      Resources/              (engine resources)
+```
+
+#### Required root `engine.json`
+`engine.json` in the engine root is required, otherwise the engine will not be picked up.
+
+Example:
+```json
+{
+  "name": "Custom Engine",
+  "description": "My custom engine",
+  "icon": "icon.png"
+}
+```
+
+Fields:
+- `name` - required.
+- `description` - recommended.
+- `icon` - build icon, optional.
+
+#### How to build an engine (example)
+`dotnet publish Robust.Client/Robust.Client.csproj -c Release -r win-x64 -p:FullRelease=True -p:TargetOS=Windows`
