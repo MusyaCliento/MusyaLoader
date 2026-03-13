@@ -238,7 +238,8 @@ internal static class Program
         var launcherInfo = new LauncherInfoManager(http);
         var overrideAssets = new OverrideAssetsManager(cfg, http, launcherInfo);
         var loginManager = new LoginManager(cfg, authApi);
-        var engineManager = new EngineManagerDynamic();
+        var engineManagerDynamic = new EngineManagerDynamic();
+        var engineManager = new EngineManagerCustom(engineManagerDynamic);
 
         locator.RegisterConstant(loc);
         locator.RegisterConstant(new ContentManager());
@@ -264,7 +265,7 @@ internal static class Program
             .UseReactiveUI();
     }
 
-    private static void CheckLauncherArchitecture(DataManager cfg, EngineManagerDynamic engineManager)
+    private static void CheckLauncherArchitecture(DataManager cfg, IEngineManager engineManager)
     {
         var curArchitecture = RuntimeInformation.ProcessArchitecture;
         var previousArchitecture = (Architecture)cfg.GetCVar(CVars.CurrentArchitecture);

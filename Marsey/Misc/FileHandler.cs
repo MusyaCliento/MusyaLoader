@@ -20,6 +20,7 @@ public abstract class FileHandler
         Directory.CreateDirectory(MarseyVars.MarseyPatchFolder);
         Directory.CreateDirectory(MarseyVars.MarseyResourceFolder);
         Directory.CreateDirectory(MarseyVars.MarseyDumperFolder);
+        Directory.CreateDirectory(MarseyVars.MarseyEngineFolder);
     }
 
     /// <summary>

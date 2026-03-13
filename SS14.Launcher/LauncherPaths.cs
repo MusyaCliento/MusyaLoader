@@ -42,6 +42,7 @@ public static class LauncherPaths
     public static readonly string DirPatch = Path.Combine(DirLauncherInstall, MarseyVars.MarseyPatchFolder);
     public static readonly string DirRPack = Path.Combine(DirLauncherInstall, MarseyVars.MarseyResourceFolder);
     public static readonly string DirDumper = Path.Combine(DirLauncherInstall, MarseyVars.MarseyDumperFolder);
+    public static readonly string DirMarseyEngines = Path.Combine(DirLauncherInstall, MarseyVars.MarseyEngineFolder);
     public static readonly string PathClientStdmarseyLog = Path.Combine(DirLogs, MarseyVars.MarseyLoggerFileName);
     // MarseyPaths
 
@@ -56,6 +57,7 @@ public static class LauncherPaths
         Ensure(DirMarsey);
         Ensure(DirPatch);
         Ensure(DirRPack);
+        Ensure(DirMarseyEngines);
         // MarseyDirs
         static void Ensure(string path) => Helpers.EnsureDirectoryExists(path);
     }

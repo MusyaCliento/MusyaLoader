@@ -9,6 +9,7 @@ publish_test
 Dependencies
 SS14.Launcher/FodyWeavers.xsd
 Marsey/Mods
+Marsey/Engines
 
 !PublishFiles/MusyaLoader.app/Contents/Resources/bin/
 __pycache__

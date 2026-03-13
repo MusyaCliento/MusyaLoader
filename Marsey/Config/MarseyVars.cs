@@ -44,7 +44,16 @@ public static class MarseyVars
     /// </summary>
     public static readonly string MarseyResourceFolder = Path.Combine(MarseyFolder, "ResourcePacks");
 
+    /// <summary>
+    /// Folder containing Dumper files
+    /// </summary>
+
     public static readonly string MarseyDumperFolder = Path.Combine(MarseyFolder, "Dumper");
+
+    /// <summary>
+    /// Folder containing Custom engine builds
+    /// </summary>
+    public static readonly string MarseyEngineFolder = Path.Combine(MarseyFolder, "Engines");
 
     /// <summary>
     /// Log identified for marseyloader

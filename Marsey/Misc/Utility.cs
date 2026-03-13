@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using System.Text.Json;
 using Marsey.Config;
 using Marsey.IPC;
 using Marsey.PatchAssembly;
@@ -97,15 +98,7 @@ public abstract class Utility
         IPC.Client MarseyConfPipeClient = new();
         string config = MarseyConfPipeClient.ConnRecv("MarseyConf");
 
-        Dictionary<string, string> envVars = new();
-        foreach (string seg in config.Split(';', StringSplitOptions.RemoveEmptyEntries))
-        {
-            string[] parts = seg.Split('=', 2);
-            if (parts.Length != 2 || string.IsNullOrEmpty(parts[0]))
-                continue;
-
-            envVars[parts[0]] = PercentDecode(parts[1]);
-        }
+        Dictionary<string, string> envVars = ParseEnvVars(config);
 
         // Apply the environment variables to MarseyConf
         foreach (KeyValuePair<string, string> kv in envVars)
@@ -127,5 +120,42 @@ public abstract class Utility
         {
             return s;
         }
+    }
+
+    private static Dictionary<string, string> ParseEnvVars(string config)
+    {
+        Dictionary<string, string> envVars = new();
+        string trimmed = config.TrimStart();
+
+        if (trimmed.StartsWith("{", StringComparison.Ordinal))
+        {
+            try
+            {
+                var json = JsonSerializer.Deserialize<Dictionary<string, string?>>(config);
+                if (json != null)
+                {
+                    foreach (var kv in json)
+                    {
+                        if (string.IsNullOrEmpty(kv.Key))
+                            continue;
+
+                        envVars[kv.Key] = kv.Value ?? string.Empty;
+                    }
+                    return envVars;
+                }
+            }
+            catch { }
+        }
+
+        foreach (string seg in config.Split(';', StringSplitOptions.RemoveEmptyEntries))
+        {
+            string[] parts = seg.Split('=', 2);
+            if (parts.Length != 2 || string.IsNullOrEmpty(parts[0]))
+                continue;
+
+            envVars[parts[0]] = PercentDecode(parts[1]);
+        }
+
+        return envVars;
     }
 }

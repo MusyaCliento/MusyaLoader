@@ -106,6 +106,47 @@
         </Grid>
       </Border>
     </DataTemplate>
+
+    <DataTemplate x:Key="EngineTileTemplate">
+      <Border Classes="resource-card">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <Border Classes="tile-icon-shell" VerticalAlignment="Top">
+            <Image Source="{Binding IconPath, Converter={StaticResource IconPathToImageConverter}}"
+                   Width="42"
+                   Height="42"
+                   Stretch="Uniform" />
+          </Border>
+
+          <StackPanel Grid.Column="1" Spacing="6" Margin="10,0,0,0">
+            <TextBlock Text="{Binding Name}"
+                       FontWeight="Bold"
+                       TextTrimming="CharacterEllipsis"
+                       MaxLines="1" />
+
+            <TextBlock Classes="SubText"
+                       Text="{Binding Description}"
+                       TextWrapping="Wrap"
+                       MaxLines="2" />
+
+            <ToggleButton Command="{Binding DataContext.SelectEngineCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                          IsChecked="{Binding Enabled, Mode=TwoWay}"
+                          Content="{loc:Loc marsey-Engine-Use}"
+                          Height="26"
+                          HorizontalAlignment="Left"
+                          CommandParameter="{Binding}" />
+          </StackPanel>
+
+          <Image Grid.Column="2"
+                 Classes="info-icon"
+                 Source="avares://SS14.Launcher/Assets/marsey-icons/info.png"
+                 Width="18"
+                 Height="18"
+                 Margin="10,0,0,0"
+                 VerticalAlignment="Top"
+                 ToolTip.Tip="{Binding SourcePath}" />
+        </Grid>
+      </Border>
+    </DataTemplate>
   </UserControl.Resources>
 
   <UserControl.Styles>
@@ -174,7 +215,7 @@
 
           <Border Grid.Row="1" Grid.Column="0" Classes="list-column">
             <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-              <ItemsControl ItemsSource="{Binding SubverterPatchesEnabled}" Name="SubverterPatchListEnabled">
+              <ItemsControl ItemsSource="{Binding PatchesEnabled}" Name="PatchListEnabled">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate>
                     <StackPanel Orientation="Vertical" />
@@ -189,7 +230,7 @@
 
           <Border Grid.Row="1" Grid.Column="1" Classes="list-column list-right">
             <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-              <ItemsControl ItemsSource="{Binding SubverterPatchesDisabled}" Name="SubverterPatchListDisabled">
+              <ItemsControl ItemsSource="{Binding PatchesDisabled}" Name="PatchListDisabled">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate>
                     <StackPanel Orientation="Vertical" />
@@ -238,6 +279,56 @@
               </ItemsControl>
             </ScrollViewer>
           </Border>
+        </Grid>
+      </TabItem>
+
+      <TabItem Header="{loc:Loc marsey-Header-Engines}">
+        <Grid RowDefinitions="Auto,*" Margin="0,8,0,0">
+          <Border Grid.Row="0"
+                  Padding="10,8"
+                  CornerRadius="8"
+                  Background="{DynamicResource ThemePopupBackgroundColor}"
+                  Margin="0,0,0,8">
+            <TextBlock Text="{loc:Loc marsey-Engine-Warn}"
+                       Classes="SubText"
+                       FontWeight="Bold"
+                       TextWrapping="Wrap" />
+          </Border>
+
+          <Grid Grid.Row="1" RowDefinitions="Auto,*" ColumnDefinitions="*,*" Margin="0,8,0,0">
+            <TextBlock Grid.Row="0" Grid.Column="0" Classes="column-header" Text="{loc:Loc marsey-Enabled}" />
+            <TextBlock Grid.Row="0" Grid.Column="1" Classes="column-header" Margin="16,0,0,6" Text="{loc:Loc marsey-Disabled}" />
+
+            <Border Grid.Row="1" Grid.Column="0" Classes="list-column">
+              <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding CustomEnginesEnabled}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <StackPanel Orientation="Vertical" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <StaticResource ResourceKey="EngineTileTemplate" />
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+            </Border>
+
+            <Border Grid.Row="1" Grid.Column="1" Classes="list-column list-right">
+              <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding CustomEnginesDisabled}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <StackPanel Orientation="Vertical" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <StaticResource ResourceKey="EngineTileTemplate" />
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+            </Border>
+          </Grid>
         </Grid>
       </TabItem>
     </TabControl>

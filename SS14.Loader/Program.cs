@@ -24,6 +24,8 @@ internal class Program
     private const string RobustAssemblyName = "Robust.Client";
 
     private readonly IFileApi _fileApi;
+    private readonly string? _engineBasePath;
+    private readonly bool _useFileSystem;
     // --- MARSEY PATCH BEGIN ---
     private readonly string? _prefix;
     // --- MARSEY PATCH END ---
@@ -36,7 +38,8 @@ internal class Program
         // --- MARSEY PATCH END ---
 
         _engineArgs = engineArgs;
-        var zipArchive = new ZipArchive(File.OpenRead(robustPath), ZipArchiveMode.Read);
+        _engineBasePath = robustPath;
+        _useFileSystem = Directory.Exists(robustPath);
 
         AssemblyLoadContext.Default.Resolving += LoadContextOnResolving;
         AssemblyLoadContext.Default.ResolvingUnmanagedDll += LoadContextOnResolvingUnmanaged;
@@ -49,7 +52,15 @@ internal class Program
 
         _prefix = prefix;
 
-        _fileApi = new ZipFileApi(zipArchive, prefix);
+        if (_useFileSystem)
+        {
+            _fileApi = new DirectoryFileApi(robustPath, prefix);
+        }
+        else
+        {
+            var zipArchive = new ZipArchive(File.OpenRead(robustPath), ZipArchiveMode.Read);
+            _fileApi = new ZipFileApi(zipArchive, prefix);
+        }
     }
 
     // --- MARSEY PATCH BEGIN ---
@@ -76,6 +87,8 @@ internal class Program
 
     private bool Run()
     {
+        EnsureLegacyResourcesFallback();
+
         if (!TryOpenAssembly(RobustAssemblyName, out var clientAssembly))
         {
             Console.WriteLine("Unable to locate Robust.Client.dll in engine build!");
@@ -168,14 +181,28 @@ internal class Program
 
     private bool TryOpenAssembly(string name, [NotNullWhen(true)] out Assembly? assembly)
     {
-        if (!TryOpenAssemblyStream(name, out var asm, out var pdb))
+        if (_useFileSystem)
         {
-            assembly = null;
-            return false;
-        }
+            if (!TryOpenAssemblyPath(name, out var asmPath, out var pdbPath))
+            {
+                assembly = null;
+                return false;
+            }
 
-        assembly = AssemblyLoadContext.Default.LoadFromStream(asm, pdb);
-        return true;
+            assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(asmPath);
+            return true;
+        }
+        else
+        {
+            if (!TryOpenAssemblyStream(name, out var asm, out var pdb))
+            {
+                assembly = null;
+                return false;
+            }
+
+            assembly = AssemblyLoadContext.Default.LoadFromStream(asm, pdb);
+            return true;
+        }
     }
 
     private bool TryOpenAssemblyStream(string name, [NotNullWhen(true)] out Stream? asm, out Stream? pdb)
@@ -187,6 +214,119 @@ internal class Program
             return false;
 
         _fileApi.TryOpen($"{name}.pdb", out pdb);
+        return true;
+    }
+
+    private void EnsureLegacyResourcesFallback()
+    {
+        if (!_useFileSystem || string.IsNullOrWhiteSpace(_engineBasePath))
+            return;
+
+        try
+        {
+            var legacyTarget = Path.GetFullPath(Path.Combine(_engineBasePath, "..", "..", "Resources"));
+            var directTarget = Path.Combine(_engineBasePath, "Resources");
+
+            var source = ResolveResourcesSource(directTarget);
+            if (source != null)
+            {
+                EnsureDirectoryFromSource(source, directTarget, "direct");
+                EnsureDirectoryFromSource(source, legacyTarget, "legacy");
+                return;
+            }
+
+            if (!Directory.Exists(legacyTarget))
+            {
+                Directory.CreateDirectory(legacyTarget);
+                Console.WriteLine($"Resources directory not found. Created empty folder: {legacyTarget}");
+            }
+
+            if (!Directory.Exists(directTarget))
+            {
+                Directory.CreateDirectory(directTarget);
+                Console.WriteLine($"Resources directory not found. Created empty folder: {directTarget}");
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Failed to prepare legacy Resources path: {e.Message}");
+        }
+    }
+
+    private static string? ResolveResourcesSource(string directTarget)
+    {
+        if (Directory.Exists(directTarget))
+            return Path.GetFullPath(directTarget);
+
+        return null;
+    }
+
+    private static void EnsureDirectoryFromSource(string source, string target, string label)
+    {
+        if (Directory.Exists(target))
+            return;
+
+        var sourceFull = Path.GetFullPath(source);
+        var targetFull = Path.GetFullPath(target);
+        if (string.Equals(sourceFull, targetFull, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        if (TryCreateLink(targetFull, sourceFull))
+        {
+            Console.WriteLine($"Linked Resources ({label}): {targetFull} -> {sourceFull}");
+            return;
+        }
+
+        CopyDirectory(sourceFull, targetFull);
+        Console.WriteLine($"Copied Resources ({label}) to: {targetFull}");
+    }
+
+
+    private static bool TryCreateLink(string linkPath, string targetPath)
+    {
+        try
+        {
+            Directory.CreateSymbolicLink(linkPath, targetPath);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static void CopyDirectory(string sourceDir, string destDir)
+    {
+        Directory.CreateDirectory(destDir);
+        foreach (var file in Directory.EnumerateFiles(sourceDir, "*", SearchOption.AllDirectories))
+        {
+            var relative = Path.GetRelativePath(sourceDir, file);
+            var dest = Path.Combine(destDir, relative);
+            Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
+            File.Copy(file, dest, overwrite: true);
+        }
+    }
+
+    private bool TryOpenAssemblyPath(string name, [NotNullWhen(true)] out string? asmPath, out string? pdbPath)
+    {
+        asmPath = null;
+        pdbPath = null;
+
+        if (string.IsNullOrWhiteSpace(_engineBasePath))
+            return false;
+
+        var root = _engineBasePath;
+        if (_prefix != null)
+            root = Path.Combine(root, _prefix);
+
+        asmPath = Path.Combine(root, $"{name}.dll");
+        if (!File.Exists(asmPath))
+            return false;
+
+        var candidatePdb = Path.Combine(root, $"{name}.pdb");
+        if (File.Exists(candidatePdb))
+            pdbPath = candidatePdb;
+
         return true;
     }
 
@@ -208,22 +348,46 @@ internal class Program
             File.ReadAllBytes(keyPath),
             KeyBlobFormat.PkixPublicKeyText);
 
-        var robustBytes = File.ReadAllBytes(robustPath);
-
-        if (!SignatureAlgorithm.Ed25519.Verify(pubKey, robustBytes, sig))
+        if (Directory.Exists(robustPath))
         {
-            // ONLY allow disabling signing on debug mode.
-#if !RELEASE
-            var disableVar = Environment.GetEnvironmentVariable("SS14_DISABLE_SIGNING");
-            if (!string.IsNullOrEmpty(disableVar) && bool.Parse(disableVar))
+            var marseyAllow = Environment.GetEnvironmentVariable("MARSEY_ALLOW_UNSIGNED_ENGINE");
+            if (string.IsNullOrWhiteSpace(marseyAllow) ||
+                (!marseyAllow.Equals("1", StringComparison.OrdinalIgnoreCase) &&
+                 !marseyAllow.Equals("true", StringComparison.OrdinalIgnoreCase)))
             {
-                Console.WriteLine("Failed to verify engine signature, ignoring because signing is disabled.");
-            }
-            else
-#endif
-            {
-                Console.WriteLine("Failed to verify engine signature!");
+                Console.WriteLine("Engine path is a directory. Set MARSEY_ALLOW_UNSIGNED_ENGINE to bypass signature checks.");
                 return 2;
+            }
+        }
+        else
+        {
+            var robustBytes = File.ReadAllBytes(robustPath);
+
+            if (!SignatureAlgorithm.Ed25519.Verify(pubKey, robustBytes, sig))
+            {
+                // ONLY allow disabling signing on debug mode.
+#if !RELEASE
+                var disableVar = Environment.GetEnvironmentVariable("SS14_DISABLE_SIGNING");
+                if (!string.IsNullOrEmpty(disableVar) && bool.Parse(disableVar))
+                {
+                    Console.WriteLine("Failed to verify engine signature, ignoring because signing is disabled.");
+                }
+                else
+#endif
+                {
+                    var marseyAllow = Environment.GetEnvironmentVariable("MARSEY_ALLOW_UNSIGNED_ENGINE");
+                    if (!string.IsNullOrWhiteSpace(marseyAllow) &&
+                        (marseyAllow.Equals("1", StringComparison.OrdinalIgnoreCase) ||
+                         marseyAllow.Equals("true", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        Console.WriteLine("Failed to verify engine signature, ignoring because MARSEY_ALLOW_UNSIGNED_ENGINE is set.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Failed to verify engine signature!");
+                        return 2;
+                    }
+                }
             }
         }
 

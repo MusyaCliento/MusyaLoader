@@ -24,6 +24,7 @@ using SS14.Launcher.Models.EngineManager;
 
 using SS14.Launcher.Models.Logins;
 using SS14.Launcher.Utility;
+using SS14.Launcher.Marseyverse.Engines;
 // --- MARSEY PATCH BEGIN ---
 using Marsey.Config;
 using Marsey.Game.Patches;
@@ -949,6 +950,12 @@ public partial class Connector : ReactiveObject
 
         if (_cfg.GetCVar(CVars.DisallowHwid))
             startInfo.EnvironmentVariables["ROBUST_AUTH_ALLOW_HWID"] = "0";
+
+        var customEngine = CustomEngineRegistry.GetSelectedEngine();
+        if (customEngine is { CanUse: true })
+        {
+            startInfo.EnvironmentVariables["MARSEY_ALLOW_UNSIGNED_ENGINE"] = "true";
+        }
 
         return startInfo;
     }

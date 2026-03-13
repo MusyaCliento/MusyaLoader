@@ -708,13 +708,19 @@ marsey-Set-Username = Установить имя пользователя
 marsey-Patches-Tab = Патчи
 marsey-Header-Patches = Патчи
 marsey-Header-ResourcePacks = Ресурс Паки
+marsey-Header-Engines = Движки
 
 marsey-Enabled = Включенно
 marsey-Disabled = Отключенно
 
 marsey-OpenModDir = Открыть Marsey
 marsey-RecheckMods = Обновить
+marsey-OpenEngineDir = Открыть папку движков
+marsey-RecheckEngines = Обновить движки
 marsey-Button-Toggle = Переключить
+marsey-Engine-Use = Использовать
+
+marsey-Engine-Warn = Пользовательские движки требуют отключенной проверки подписи или неподписанной сборки.
 
 marsey-Patches-Unsandboxed = Патчи не изолированы, используйте на свой риск.
 marsey-patch-type-marsey = Marsey-Patch

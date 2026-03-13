@@ -17,6 +17,7 @@ using Microsoft.Toolkit.Mvvm.Input;
 using Serilog;
 using SS14.Launcher.Localization;
 using SS14.Launcher.Marseyverse;
+using SS14.Launcher.Marseyverse.Engines;
 
 namespace SS14.Launcher.ViewModels.MainWindowTabs
 {
@@ -27,15 +28,22 @@ namespace SS14.Launcher.ViewModels.MainWindowTabs
         public ObservableCollection<MarseyPatch> MarseyPatches { get; } = new();
         public ObservableCollection<SubverterPatch> SubverterPatches { get; } = new();
         public ObservableCollection<ResourcePack> ResourcePacks { get; } = new();
+        public ObservableCollection<CustomEngineInfo> CustomEngines { get; } = new();
+
+        public ObservableCollection<IPatch> PatchesEnabled { get; } = new();
+        public ObservableCollection<IPatch> PatchesDisabled { get; } = new();
 
         public ObservableCollection<SubverterPatch> SubverterPatchesEnabled { get; } = new();
         public ObservableCollection<SubverterPatch> SubverterPatchesDisabled { get; } = new();
         public ObservableCollection<ResourcePack> ResourcePacksEnabled { get; } = new();
         public ObservableCollection<ResourcePack> ResourcePacksDisabled { get; } = new();
+        public ObservableCollection<CustomEngineInfo> CustomEnginesEnabled { get; } = new();
+        public ObservableCollection<CustomEngineInfo> CustomEnginesDisabled { get; } = new();
 
         public ICommand OpenPatchDirectoryCommand { get; }
         public ICommand ReloadModsCommand { get; }
         public ICommand EnableRefreshCommand { get; }
+        public ICommand SelectEngineCommand { get; }
         public ICommand MoveResourcePackUpCommand { get; }
         public ICommand MoveResourcePackDownCommand { get; }
 
@@ -49,6 +57,7 @@ namespace SS14.Launcher.ViewModels.MainWindowTabs
             OpenPatchDirectoryCommand = new RelayCommand(() => OpenPatchDirectory(MarseyVars.MarseyFolder));
             ReloadModsCommand = new RelayCommand(ReloadMods);
             EnableRefreshCommand = new RelayCommand(Refresh);
+            SelectEngineCommand = new RelayCommand<CustomEngineInfo?>(SelectEngine);
             MoveResourcePackUpCommand = new RelayCommand<ResourcePack?>(pack => MoveResourcePack(pack, -1));
             MoveResourcePackDownCommand = new RelayCommand<ResourcePack?>(pack => MoveResourcePack(pack, 1));
 
@@ -76,10 +85,12 @@ namespace SS14.Launcher.ViewModels.MainWindowTabs
             MarseyPatches.Clear();
             SubverterPatches.Clear();
             ResourcePacks.Clear();
+            CustomEngines.Clear();
 
             LoadPatchList(Marsyfier.GetMarseyPatches(), MarseyPatches, "marseypatches");
             LoadPatchList(Subverter.GetSubverterPatches(), SubverterPatches, "subverterpatches");
             LoadResPacks(ResMan.GetRPacks(), ResourcePacks);
+            LoadCustomEngines();
 
             UpdateFilteredCollections();
         }
@@ -185,10 +196,23 @@ namespace SS14.Launcher.ViewModels.MainWindowTabs
 
         private void UpdateFilteredCollections()
         {
+            PatchesEnabled.Clear();
+            PatchesDisabled.Clear();
+
             SubverterPatchesEnabled.Clear();
             SubverterPatchesDisabled.Clear();
             ResourcePacksEnabled.Clear();
             ResourcePacksDisabled.Clear();
+            CustomEnginesEnabled.Clear();
+            CustomEnginesDisabled.Clear();
+
+            foreach (var patch in MarseyPatches.Cast<IPatch>().Concat(SubverterPatches))
+            {
+                if (patch.Enabled)
+                    PatchesEnabled.Add(patch);
+                else
+                    PatchesDisabled.Add(patch);
+            }
 
             foreach (var patch in SubverterPatches)
             {
@@ -205,6 +229,63 @@ namespace SS14.Launcher.ViewModels.MainWindowTabs
                 else
                     ResourcePacksDisabled.Add(pack);
             }
+
+            foreach (var engine in CustomEngines)
+            {
+                if (engine.Enabled)
+                    CustomEnginesEnabled.Add(engine);
+                else
+                    CustomEnginesDisabled.Add(engine);
+            }
+        }
+
+        private void LoadCustomEngines()
+        {
+            CustomEngines.Clear();
+
+            var engines = CustomEngineRegistry.ScanEngines();
+            var selected = CustomEngineRegistry.LoadSelection();
+
+            foreach (var engine in engines)
+            {
+                if (!string.IsNullOrWhiteSpace(selected) &&
+                    string.Equals(engine.SourcePath, selected, StringComparison.OrdinalIgnoreCase))
+                {
+                    engine.Enabled = true;
+                }
+
+                CustomEngines.Add(engine);
+            }
+
+            Log.Debug("Loaded {Count} custom engine(s).", CustomEngines.Count);
+            MarseyLogger.Log(MarseyLogger.LogType.INFO, "Engines", $"Loaded {CustomEngines.Count} custom engine(s).");
+        }
+
+        private void SelectEngine(CustomEngineInfo? engine)
+        {
+            if (engine == null)
+                return;
+
+            if (!engine.Enabled)
+            {
+                CustomEngineRegistry.SaveSelection(null);
+                UpdateFilteredCollections();
+                return;
+            }
+
+            if (!engine.CanUse)
+            {
+                engine.Enabled = false;
+                UpdateFilteredCollections();
+                return;
+            }
+
+            foreach (var entry in CustomEngines)
+                entry.Enabled = false;
+
+            engine.Enabled = true;
+            CustomEngineRegistry.SaveSelection(engine.SourcePath);
+            UpdateFilteredCollections();
         }
 
         private void SaveResourcePacksConfig()

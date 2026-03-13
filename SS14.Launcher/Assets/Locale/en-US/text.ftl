@@ -530,13 +530,19 @@ marsey-Set-Username = Set Username
 marsey-Patches-Tab = Patches
 marsey-Header-Patches = Patches
 marsey-Header-ResourcePacks = Resource Packs
+marsey-Header-Engines = Engines
 
 marsey-Enabled = Enabled
 marsey-Disabled = Disabled
 
 marsey-OpenModDir = Open Marsey directory
 marsey-RecheckMods = Recheck
+marsey-OpenEngineDir = Open Engines directory
+marsey-RecheckEngines = Recheck Engines
 marsey-Button-Toggle = Toggle
+marsey-Engine-Use = Use
+
+marsey-Engine-Warn = Custom engines may require unsigned builds or signature checks disabled.
 
 marsey-Patches-Unsandboxed = Patches are unsandboxed, run at own risk.
 marsey-patch-type-marsey = Marsey patch
