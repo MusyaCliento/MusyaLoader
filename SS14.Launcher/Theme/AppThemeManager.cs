@@ -41,7 +41,7 @@ public static class AppThemeManager
         ["ThemeForegroundColor"] = Color.Parse("#EEEEEE"),
         ["ThemeForegroundMutedColor"] = Color.Parse("#666666"),
         ["ThemeControlMidColor"] = Color.Parse("#464966"),
-        ["ThemeControlHighColor"] = Color.Parse("#3E6C45"),
+        ["ThemeControlHighColor"] = Color.Parse("#525259"),
         ["ThemeNanoGoldColor"] = Color.Parse("#ADA24B"),
         ["ThemeSubTextColor"] = Color.Parse("#AAAAAA"),
         ["ThemeStripebackEdgeColor"] = Color.Parse("#525252"),
@@ -52,7 +52,9 @@ public static class AppThemeManager
         ["ThemeListSeparatorColorTransparent"] = Color.Parse("#00575B7F"),
         ["ThemeBorderMidColor"] = Color.Parse("#6B6F8F"),
         ["ThemeBorderHighColor"] = Color.Parse("#8E94B8"),
-        ["ThemeListAltRowColor"] = Color.Parse("#26262C")
+        ["ThemeListAltRowColor"] = Color.Parse("#26262C"),
+        ["SenseLineHorizontalColor"] = Color.Parse("#ADA24B"),
+        ["ThemeScrollViewerSepColor"] = Color.Parse("#2E2E35")
     };
 
     private static readonly IReadOnlyDictionary<string, Color> LightColors = new Dictionary<string, Color>

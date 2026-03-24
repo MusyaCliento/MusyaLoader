@@ -42,7 +42,7 @@ public partial class ProxyProfileDialog : Window
 
         if (string.IsNullOrWhiteSpace(host))
         {
-            ErrorText.Text = _loc.GetString("tab-proxy-dialog-host") + " is required.";
+            ErrorText.Text = _loc.GetString("tab-proxy-dialog-host-required");
             return;
         }
 

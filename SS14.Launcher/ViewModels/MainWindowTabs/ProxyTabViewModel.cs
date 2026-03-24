@@ -224,7 +224,7 @@ public sealed class ProxyTabViewModel : MainWindowTabViewModel
         existing.Password = draft.Password ?? "";
         existing.LastTcp = "-";
         existing.LastUdp = "-";
-        existing.LastTest = "-";
+        existing.LastTest = "";
 
         SelectedProfile = existing;
         SaveProfiles();
@@ -384,7 +384,7 @@ public sealed class ProxyTabViewModel : MainWindowTabViewModel
         private string _lastTcp = "-";
         private string _lastConnect = "-";
         private string _lastUdp = "-";
-        private string _lastTest = "-";
+        private string _lastTest = "";
 
         public ProxyProfileItem()
         {
@@ -534,4 +534,3 @@ public sealed class ProxyTabViewModel : MainWindowTabViewModel
         string Username,
         string Password);
 }
-
