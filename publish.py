@@ -13,6 +13,14 @@ TFM = "net10.0"
 
 p = os.path.join
 
+
+def copy_text_file_with_lf(src: str, dst: str):
+    with open(src, "r", encoding="utf-8", newline=None) as source:
+        content = source.read()
+
+    with open(dst, "w", encoding="utf-8", newline="\n") as target:
+        target.write(content)
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("platform", nargs="*")
@@ -133,8 +141,8 @@ def publish_linux(x64_only: bool):
         shutil.copytree(f"SS14.Updater/bin/Release/{TFM}/linux-arm64/publish", "bin/publish/Linux/bin_arm64", dirs_exist_ok=True)
         shutil.copytree(f"SS14.ProxyService/bin/Release/{TFM}/linux-arm64/publish", "bin/publish/Linux/bin_arm64", dirs_exist_ok=True)
 
-    shutil.copyfile("PublishFiles/SS14.Launcher", "bin/publish/Linux/SS14.Launcher")
-    shutil.copyfile("PublishFiles/SS14.desktop", "bin/publish/Linux/SS14.desktop")
+    copy_text_file_with_lf("PublishFiles/SS14.Launcher", "bin/publish/Linux/SS14.Launcher")
+    copy_text_file_with_lf("PublishFiles/SS14.desktop", "bin/publish/Linux/SS14.desktop")
 
     shutil.make_archive("MusyaLoader_Linux", "zip", "bin/publish/Linux")
 

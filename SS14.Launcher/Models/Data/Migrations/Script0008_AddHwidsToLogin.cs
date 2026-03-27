@@ -14,22 +14,18 @@ public sealed class Script0007_AddHwidsToLogin : Migrator.IMigrationScript
 
     public string Up(SqliteConnection connection)
     {
-        var columns = connection
-            .Query<TableInfoRow>("PRAGMA table_info(Login);")
-            .Select(r => r.Name)
+        var tables = connection.Query<string>("SELECT name FROM sqlite_master WHERE type = 'table'")
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        var sql = "";
-
-        if (!columns.Contains("ModernHWId"))
-            sql += "ALTER TABLE Login ADD COLUMN ModernHWId TEXT;\n";
-
-        if (!columns.Contains("LegacyHWId"))
-            sql += "ALTER TABLE Login ADD COLUMN LegacyHWId TEXT;\n";
-
-        if (string.IsNullOrWhiteSpace(sql))
+        if (tables.Contains("LoginHwid"))
             return "SELECT 1;";
 
-        return sql;
+        return """
+            CREATE TABLE IF NOT EXISTS LoginHwid (
+                UserId TEXT PRIMARY KEY NOT NULL,
+                ModernHWId TEXT,
+                LegacyHWId TEXT
+            );
+            """;
     }
 }

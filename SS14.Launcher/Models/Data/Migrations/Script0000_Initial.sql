@@ -2,7 +2,11 @@
     UserId TEXT PRIMARY KEY NOT NULL,
     UserName TEXT NOT NULL,
     Token TEXT NOT NULL,
-    Expires DATETIME NOT NULL,
+    Expires DATETIME NOT NULL
+);
+
+CREATE TABLE LoginHwid (
+    UserId TEXT PRIMARY KEY NOT NULL,
     ModernHWId TEXT,
     LegacyHWId TEXT
 );

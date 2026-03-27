@@ -53,6 +53,19 @@ public partial class Connector : ReactiveObject
     private readonly HttpClient _http;
     private Process? _udpRelayProcess;
     private bool _udpRelayIndependent;
+    private static readonly (string Command, string[] PrefixArgs, string ExecFlag)[] LinuxDebugTerminalCandidates =
+    [
+        ("konsole", ["--noclose"], "-e"),
+        ("x-terminal-emulator", [], "-e"),
+        ("gnome-terminal", [], "--"),
+        ("mate-terminal", [], "--"),
+        ("xfce4-terminal", ["--hold"], "-x"),
+        ("lxterminal", [], "-e"),
+        ("alacritty", ["--hold"], "-e"),
+        ("kitty", ["--hold"], "-e"),
+        ("xterm", ["-hold"], "-e")
+    ];
+    private static readonly UTF8Encoding Utf8NoBom = new(false);
 
     // --- MARSEY PATCH BEGIN ---
     private string? _forkid;
@@ -766,44 +779,31 @@ public partial class Connector : ReactiveObject
         var debug = _cfg.GetCVar(CVars.LauncherProxyServiceDebug);
         var independent = _cfg.GetCVar(CVars.LauncherProxyServiceIndependent);
 
-        var psi = new ProcessStartInfo
+        var proxyServiceArgs = new List<string>
         {
-            FileName = proxyServicePath,
-            UseShellExecute = false,
-            CreateNoWindow = !debug
+            "--listen-host", listenHost,
+            "--listen-port", listenPort.ToString(),
+            "--target-host", targetHost,
+            "--target-port", targetPort.ToString(),
+            "--socks-host", proxyCfg.Host,
+            "--socks-port", proxyCfg.Port.ToString()
         };
-        if (!debug)
-        {
-            psi.RedirectStandardOutput = true;
-            psi.RedirectStandardError = true;
-        }
-
-        psi.ArgumentList.Add("--listen-host");
-        psi.ArgumentList.Add(listenHost);
-        psi.ArgumentList.Add("--listen-port");
-        psi.ArgumentList.Add(listenPort.ToString());
-        psi.ArgumentList.Add("--target-host");
-        psi.ArgumentList.Add(targetHost);
-        psi.ArgumentList.Add("--target-port");
-        psi.ArgumentList.Add(targetPort.ToString());
-        psi.ArgumentList.Add("--socks-host");
-        psi.ArgumentList.Add(proxyCfg.Host);
-        psi.ArgumentList.Add("--socks-port");
-        psi.ArgumentList.Add(proxyCfg.Port.ToString());
 
         if (!string.IsNullOrWhiteSpace(proxyCfg.Username))
         {
-            psi.ArgumentList.Add("--socks-user");
-            psi.ArgumentList.Add(proxyCfg.Username);
-            psi.ArgumentList.Add("--socks-pass");
-            psi.ArgumentList.Add(proxyCfg.Password ?? "");
+            proxyServiceArgs.Add("--socks-user");
+            proxyServiceArgs.Add(proxyCfg.Username);
+            proxyServiceArgs.Add("--socks-pass");
+            proxyServiceArgs.Add(proxyCfg.Password ?? "");
         }
 
         if (!independent)
         {
-            psi.ArgumentList.Add("--parent-pid");
-            psi.ArgumentList.Add(Process.GetCurrentProcess().Id.ToString());
+            proxyServiceArgs.Add("--parent-pid");
+            proxyServiceArgs.Add(Process.GetCurrentProcess().Id.ToString());
         }
+
+        var psi = CreateProxyServiceStartInfo(proxyServicePath, proxyServiceArgs, debug);
 
         var process = Process.Start(psi);
         if (process != null)
@@ -824,6 +824,136 @@ public partial class Connector : ReactiveObject
     {
         using var udp = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
         return ((IPEndPoint)udp.Client.LocalEndPoint!).Port;
+    }
+
+    private static ProcessStartInfo CreateProxyServiceStartInfo(
+        string proxyServicePath,
+        IReadOnlyList<string> proxyServiceArgs,
+        bool debug)
+    {
+        if (debug &&
+            OperatingSystem.IsLinux() &&
+            TryCreateLinuxDebugTerminalStartInfo(proxyServicePath, proxyServiceArgs, out var terminalPsi))
+        {
+            return terminalPsi;
+        }
+
+        if (debug && OperatingSystem.IsLinux())
+        {
+            Log.Warning("ProxyService debug terminal was requested, but no Linux terminal emulator was found. Starting without a visible terminal window.");
+        }
+
+        var psi = new ProcessStartInfo
+        {
+            FileName = proxyServicePath,
+            UseShellExecute = false,
+            CreateNoWindow = !debug
+        };
+
+        foreach (var arg in proxyServiceArgs)
+        {
+            psi.ArgumentList.Add(arg);
+        }
+
+        if (!debug)
+        {
+            psi.RedirectStandardOutput = true;
+            psi.RedirectStandardError = true;
+        }
+
+        return psi;
+    }
+
+    private static bool TryCreateLinuxDebugTerminalStartInfo(
+        string proxyServicePath,
+        IReadOnlyList<string> proxyServiceArgs,
+        out ProcessStartInfo psi)
+    {
+        foreach (var (command, prefixArgs, execFlag) in LinuxDebugTerminalCandidates)
+        {
+            var terminalPath = FindExecutableOnPath(command);
+            if (terminalPath == null)
+                continue;
+
+            psi = new ProcessStartInfo
+            {
+                FileName = terminalPath,
+                UseShellExecute = false,
+                CreateNoWindow = false
+            };
+            foreach (var prefixArg in prefixArgs)
+            {
+                psi.ArgumentList.Add(prefixArg);
+            }
+            psi.ArgumentList.Add(execFlag);
+            psi.ArgumentList.Add(proxyServicePath);
+
+            foreach (var arg in proxyServiceArgs)
+            {
+                psi.ArgumentList.Add(arg);
+            }
+
+            Log.Debug("Launching ProxyService debug session via terminal emulator {TerminalPath}", terminalPath);
+            return true;
+        }
+
+        psi = null!;
+        return false;
+    }
+
+    private static bool TryCreateLinuxTerminalStartInfo(string scriptPath, out ProcessStartInfo psi)
+    {
+        foreach (var (command, prefixArgs, execFlag) in LinuxDebugTerminalCandidates)
+        {
+            var terminalPath = FindExecutableOnPath(command);
+            if (terminalPath == null)
+                continue;
+
+            psi = new ProcessStartInfo
+            {
+                FileName = terminalPath,
+                UseShellExecute = false,
+                CreateNoWindow = false
+            };
+
+            foreach (var prefixArg in prefixArgs)
+            {
+                psi.ArgumentList.Add(prefixArg);
+            }
+
+            psi.ArgumentList.Add(execFlag);
+            psi.ArgumentList.Add("bash");
+            psi.ArgumentList.Add(scriptPath);
+            return true;
+        }
+
+        psi = null!;
+        return false;
+    }
+
+    private static string? FindExecutableOnPath(string fileName)
+    {
+        if (Path.IsPathRooted(fileName))
+            return File.Exists(fileName) ? fileName : null;
+
+        var pathEnv = Environment.GetEnvironmentVariable("PATH");
+        if (string.IsNullOrWhiteSpace(pathEnv))
+            return null;
+
+        foreach (var directory in pathEnv.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+        {
+            try
+            {
+                var candidate = Path.Combine(directory, fileName);
+                if (File.Exists(candidate))
+                    return candidate;
+            }
+            catch
+            {
+            }
+        }
+
+        return null;
     }
 
     private static string? GetProxyServiceExecutablePath()
@@ -1323,4 +1453,3 @@ public enum PrivacyPolicyAcceptResult
     Denied,
     Accepted,
 }
-

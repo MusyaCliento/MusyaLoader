@@ -112,7 +112,13 @@ public sealed class DataManager : ReactiveObject
             if (value == "")
                 return null;
 
-            return Guid.Parse(value);
+            if (Guid.TryParse(value, out var guid))
+                return guid;
+
+            Log.Warning("Invalid SelectedLogin value in config: {SelectedLogin}. Resetting it.", value);
+            SetCVar(CVars.SelectedLogin, "");
+            CommitConfig();
+            return null;
         }
         set
         {
@@ -286,6 +292,12 @@ public sealed class DataManager : ReactiveObject
         // Load from SQLite DB.
         LoadSqliteConfig(connection);
 
+        if (SelectedLoginId is { } selectedLoginId && !_logins.Lookup(selectedLoginId).HasValue)
+        {
+            Log.Warning("SelectedLogin points to missing login {SelectedLoginId}. Resetting it.", selectedLoginId);
+            SetCVar(CVars.SelectedLogin, "");
+        }
+
         //if (GetCVar(CVars.Fingerprint) == "")
         //{
             // If we don't have a fingerprint yet this is either a fresh config or an older config.
@@ -301,7 +313,11 @@ public sealed class DataManager : ReactiveObject
         // Load logins.
         _logins.AddOrUpdate(
             sqliteConnection.Query<(Guid id, string name, string token, string? modernhwid, string? legacyhwid, DateTimeOffset expires)>(
-                    "SELECT UserId, UserName, Token, ModernHWId, LegacyHWId, Expires FROM Login")
+                    """
+                    SELECT l.UserId, l.UserName, l.Token, h.ModernHWId, h.LegacyHWId, l.Expires
+                    FROM Login AS l
+                    LEFT JOIN LoginHwid AS h ON h.UserId = l.UserId
+                    """)
                 .Select(l => new LoginInfo
                 {
                     UserId = l.id,
@@ -533,16 +549,31 @@ public sealed class DataManager : ReactiveObject
         };
         AddDbCommand(con =>
         {
-            con.Execute(reason switch
-                {
-                    ChangeReason.Add => "INSERT INTO Login (UserId, UserName, Token, Expires, ModernHWId, LegacyHWId) VALUES (@UserId, @UserName, @Token, @Expires, @ModernHWId, @LegacyHWId)",
-                    ChangeReason.Update =>
-                        "UPDATE Login SET UserName = @UserName, Token = @Token, Expires = @Expires, ModernHWId = @ModernHWId, LegacyHWId = @LegacyHWId WHERE UserId = @UserId",
-                    ChangeReason.Remove => "DELETE FROM Login WHERE UserId = @UserId",
-                    _ => throw new ArgumentOutOfRangeException(nameof(reason), reason, null)
-                },
-                data
-            );
+            switch (reason)
+            {
+                case ChangeReason.Add:
+                    con.Execute(
+                        "INSERT INTO Login (UserId, UserName, Token, Expires) VALUES (@UserId, @UserName, @Token, @Expires)",
+                        data);
+                    con.Execute(
+                        "INSERT OR REPLACE INTO LoginHwid (UserId, ModernHWId, LegacyHWId) VALUES (@UserId, @ModernHWId, @LegacyHWId)",
+                        data);
+                    break;
+                case ChangeReason.Update:
+                    con.Execute(
+                        "UPDATE Login SET UserName = @UserName, Token = @Token, Expires = @Expires WHERE UserId = @UserId",
+                        data);
+                    con.Execute(
+                        "INSERT OR REPLACE INTO LoginHwid (UserId, ModernHWId, LegacyHWId) VALUES (@UserId, @ModernHWId, @LegacyHWId)",
+                        data);
+                    break;
+                case ChangeReason.Remove:
+                    con.Execute("DELETE FROM LoginHwid WHERE UserId = @UserId", data);
+                    con.Execute("DELETE FROM Login WHERE UserId = @UserId", data);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(reason), reason, null);
+            }
         });
     }
 
