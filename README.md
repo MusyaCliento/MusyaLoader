@@ -1,6 +1,6 @@
 ![MusyaLoader](SS14.Launcher/Assets/logo-long.png)
 
-Space Station 14 launcher fork with client-side patching and resource pack support.
+Space Station 14 launcher fork with patching, proxy, resource pack, and custom engine support.
 
 ![badge](Assets/README/no-stops-no-regrets.svg)
 ![badge](Assets/README/ensuring-code-integrity.svg)
@@ -11,336 +11,189 @@ Space Station 14 launcher fork with client-side patching and resource pack suppo
 ## Русский
 
 ### Что это
-`MusyaLoader` - форк лаунчера SS14 с дополнительными возможностями для патчинга, приватности и кастомизации клиента.
+`MusyaLoader` это форк лаунчера SS14 с упором на кастомизацию клиента, патчи, приватность и дополнительные инструменты для запуска.
 
-### Запуск!!!!!!
+### Скачать и запустить
 ЕСЛИ ВАМ НЕ НАДО НЕ СОБИРАЙТЕ, А СКАЧАЙТЕ РЕЛИЗ ЕСЛИ ПРОСТО ХОТИТЕ ПОИГРАТЬ
 Жмёте на кнопку Releases справа на сайте github и там скачиваете последний под вашу систему, windows, linux и т.д.
 Распаковываете архив и так же запускаете exe, shell и т.д. файл под вашу систему.
 По поводу 20+ детектов на сам bootstrap ну который "MusyaLoader.exe" я не знаю почему у него столько детектов, можете сами сбилдить и залить на virustotal там будут детекты типо вирус и т.д. может потом починю 
 
-### Основные функции
+### Ссылки
+- GitHub Releases: `https://github.com/MusyaCliento/MusyaLoader/releases`
+- Discord: `https://discord.gg/u9d6nGSnse`
+- Гайд по ресурс-пакам: [docs/RESOURCE_PACKS.md](docs/RESOURCE_PACKS.md)
+- Гайд по кастомным движкам: [docs/CUSTOM_ENGINES.md](docs/CUSTOM_ENGINES.md)
 
-#### Игра и патчи
-- Интеграция Harmony-патчинга для client/shared/engine сборок.
+### Основные возможности
+
+#### Патчи и поведение клиента
+- Harmony-патчинг client/shared/engine сборок.
 - SideLoad пользовательского кода в клиент.
-- Несколько уровней скрытия патчера/патчей (`Hide Level`).
-- `Patchless` режим (killswitch для патчей).
-- `Throw on patch fail` (аварийный выход при ошибке патча).
-- Backports (включая глобальные/целевые) с отдельным выключателем.
-- Опция whitelist для `RemoteExecuteCommand`.
-- Отключение редиала (форс-редиректов).
+- Несколько уровней скрытия патчера и следов патчей (`Hide Level`).
+- `Patchless` режим для запуска без патчей.
+- `Throw on patch fail` для аварийной остановки при неуспешном патче.
+- Backports и отдельный выключатель глобальных backports.
+- Отключение `RemoteExecuteCommand`.
+- Отключение redial / форс-переподключений.
+- Пропуск privacy policy check при подключении.
 
-#### Приватность и аккаунты
+#### Аккаунты и приватность
 - Multi-account.
-- Гостевой режим и настройка guest username.
+- Гостевой режим с отдельным guest username.
 - Отключение авто-логина в последний аккаунт.
-- Подмена/привязка HWID, генерация случайного HWID, auto-delete HWID.
-- Opt-out от отправки HWID (`HWID2 opt-out`).
-- flYi forcer
-- Отключение Discord RPC.
-- Fake RPC username.
-- Локальная подмена username для лаунчера/скриншотов (не меняет ник на сервере).
+- Изменение имени выбранного аккаунта в лаунчере и имени, передаваемого клиенту при запуске.
+- Привязка HWID к аккаунту, ручная подмена HWID, генерация случайного HWID.
+- Авто-удаление HWID перед запуском.
+- `HWID2 opt-out` для отказа от отправки HWID на сервер.
+- `flYi` / forced user id для HWID-логики.
+- Отключение Discord Rich Presence.
+- Подмена имени в Discord Rich Presence.
 
-#### Интерфейс и UX
-- Локализация интерфейса (включая RU/EN).
-- Темы: набор встроенных + Custom theme.
-- Кастомные цвета (фон, акцент, текст, popup, градиенты).
-- Импорт/экспорт custom theme в `.json`.
-- Градиент и декоративный фон как отдельные опции.
-- Выбор встроенного шрифта + загрузка своего `.ttf/.otf`.
-- Настройка отображаемых полей в списке серверов (time/players/map/mode/ping).
+#### Прокси
+- Встроенная вкладка `Proxy` с профилями SOCKS5.
+- Сохранение, выбор и редактирование нескольких proxy-профилей.
+- Проверка proxy: RTT, TCP connect и UDP test.
+- Proxy для самого лаунчера.
+- Proxy для обновлений лаунчера и GitHub-запросов.
+- Proxy для загрузчика через `ALL_PROXY` / `HTTP_PROXY` / `HTTPS_PROXY`.
+- Обход региональных ограничений для загрузки Robust build'ов.
+- Проксирование игрового UDP через `SS14.ProxyService` и SOCKS5 UDP relay.
+- Блокировка запуска игры, если тест proxy провален.
+- Debug-режим для `SS14.ProxyService`.
+
+#### Интерфейс и кастомизация
+- RU/EN и другие локализации интерфейса.
+- Встроенные темы и `Custom Theme`.
+- Настройка цветов фона, акцента, текста, popup и градиента.
+- Импорт и экспорт кастомной темы в `.json`.
+- Отдельные тумблеры для градиента и декоративного фона.
+- Выбор встроенного шрифта и подключение собственного `.ttf` / `.otf`.
+- Настройка колонок в списке серверов: round time, players, map, mode, ping.
 - Рандомизация заголовка окна, хедера и сообщений подключения.
 
-#### Логи и отладка
-- Раздельные тумблеры логов: client/launcher/verbose/patcher/trace/debug.
-- Раздельный лог патчера (`client.marsey.log`).
-- Открытие папки логов из UI.
-- Dump CVars.
-- Dump ресурсов/ассетов (через Resource Dumper) + кнопка открытия папки дампов.
-
-#### Обновления лаунчера
+#### Ресурсы, движки и обновления
+- Поддержка resource packs с порядком загрузки и быстрым включением/выключением.
+- Поддержка custom engines из папки или `.zip`.
+- Выбор кастомного движка прямо из лаунчера.
 - Встроенный раздел обновлений лаунчера.
-- Выбор GitHub-репозитория обновлений.
-- Фильтры `Release / Pre-Release / All`.
+- Выбор GitHub-репозитория для обновлений.
+- Фильтр `Release / Pre-release / All`.
 - Установка выбранной версии из списка.
-- Автообновление и уведомления об обновлениях.
+- Автообновление и уведомления о новых версиях.
 
-### Cборка
+#### Логи и отладка
+- Раздельные логи: client, launcher, verbose, patcher, trace, debug.
+- Отдельный лог патчера (`client.marsey.log`).
+- Открытие папки логов из UI.
+- Dump ресурсов/ассетов через `Resource Dumper`.
+- Открытие папки дампов из UI.
+- Очистка скачанных движков и server content из настроек.
+
+### Сборка
 1. Установить `.NET 10 SDK`.
 2. Клонировать репозиторий с сабмодулями:
    `git clone --recurse-submodules https://github.com/MusyaCliento/MusyaLoader.git`
 3. Собрать:
-   `python publish.py windows --x64-only` Для Windows
+   `python publish.py windows --x64-only` для Windows
 
-   `python publish.py linux --x64-only` Для Linux
-   
-   `python publish.py osx` Для MacOS
-4. Распаковать архив из `MusyaLoader_YourOS.zip` и запустить.
+   `python publish.py linux --x64-only` для Linux
 
-### Resource Packs: документация
-
-#### Куда класть
-Паки лежат в папке:
-`Marsey/ResourcePacks/<ИмяПака>`
-
-#### Пример структуры
-```text
-Marsey/
-  ResourcePacks/
-    MyPack/
-      meta.json
-      icon.png                (необязательно)
-      Resources/
-        Textures/
-        Locale/
-```
-
-#### Обязательный `meta.json` в корне пака
-`meta.json` в корне папки пака обязателен, иначе пак не загрузится.
-
-Пример:
-```json
-{
-  "name": "My Pack",
-  "description": "My custom textures and locale",
-  "target": ""
-}
-```
-
-Поля:
-- `name` - обязательно.
-- `description` - рекомендуется.
-- `target` - fork id (если пусто, применяется без привязки к конкретному форку).
-
-#### Правило для `.rsi` (ВАЖНО)
-Если меняешь текстуры внутри `.rsi`-папки, рядом с изменёнными файлами должен лежать корректный `meta.json` этой `.rsi`.
-
-Пример:
-```text
-Resources/
-  Textures/
-    Mobs/
-      Ghosts/
-        ghost_human.rsi/
-          meta.json
-          icon.png
-          animated.png
-          inhand-left.png
-          inhand-right.png
-```
-
-Без `meta.json` у `.rsi` клиент может невалидно читать спрайт/состояния, и замена будет работать некорректно или не сработает.
-
-#### Как подменяются ресурсы
-- Подмена идёт по относительному пути внутри `Resources/`.
-- Файлы `meta.json` и `icon.png` в корне пака не подменяют игровые ресурсы (это метаданные пака).
-- Для локализации можно класть свои `.ftl` в `Resources/Locale/<locale>/...`.
-
-
-### Custom Engine: документация
-Как таковая эта функция уже есть в лаучнере в Debug сборке, но тут просто чуть удобнее делать это
-
-#### Куда класть
-Движки лежат в папке:
-`Marsey/Engines/<ИмяПака>`
-
-#### Пример структуры
-```text
-Marsey/
-  Engines/
-    Client/
-      engine.json
-      icon.png                (необязательно)
-      Robust.Client           (Файлы самого движка)
-      Robust.Shared           (Файлы самого движка)
-      ...
-      Resources/              (Ресурсы самого движка)
-```
-
-#### Обязательный `engine.json` в корне пака
-`engine.json` в корне папки пака обязателен, иначе движок не подхватится.
-
-Пример:
-```json
-{
-  "name": "Custom Engine",
-  "description": "My custom engine",
-  "icon": "icon.png"
-}
-```
-
-Поля:
-- `name` - обязательно.
-- `description` - рекомендуется.
-- `icon` - иконка для билда, не обязательна.
-
-#### Как собирать Движок пример
-
-`dotnet publish Robust.Client/Robust.Client.csproj -c Release -r win-x64 -p:FullRelease=True -p:TargetOS=Windows`
+   `python publish.py osx` для macOS
+4. Забрать архив `MusyaLoader_<OS>.zip`, распаковать и запустить.
 
 ---
 
 ## English
 
 ### What it is
-`MusyaLoader` is an SS14 launcher fork with additional patching, privacy, and client customization features.
+`MusyaLoader` is an SS14 launcher fork focused on client customization, patches, privacy, and extra launch-related tools.
+
+### Download and run
+IF YOU DO NOT NEED TO BUILD IT, DO NOT BUILD IT, JUST DOWNLOAD A RELEASE IF YOU ONLY WANT TO PLAY
+Click the `Releases` button on the right side of the GitHub page and download the latest build for your system, Windows, Linux, etc.
+Extract the archive and run the `.exe`, shell script, or other file for your system.
+About the 20+ detections on the bootstrap itself, the one called `MusyaLoader.exe`, I do not know why it gets that many detections. You can build it yourself and upload it to VirusTotal, and there will still be detections like virus and so on. Maybe I will fix it later.
+
+### Links
+- GitHub Releases: `https://github.com/MusyaCliento/MusyaLoader/releases`
+- Discord: `https://discord.gg/u9d6nGSnse`
+- Resource packs guide: [docs/RESOURCE_PACKS.md](docs/RESOURCE_PACKS.md)
+- Custom engines guide: [docs/CUSTOM_ENGINES.md](docs/CUSTOM_ENGINES.md)
 
 ### Main features
 
-#### Game and patching
-- Harmony-based patching for client/shared/engine assemblies.
-- Custom code sideloading into the client.
-- Multiple patcher visibility levels (`Hide Level`).
-- `Patchless` mode (patch killswitch).
-- `Throw on patch fail` safety toggle.
-- Backports support (global and targeted).
-- `RemoteExecuteCommand` whitelist option.
-- Redial/forced reconnect disable.
+#### Patches and client behavior
+- Harmony patching for client/shared/engine assemblies.
+- SideLoad of user code into the client.
+- Multiple levels of patcher and patch trace hiding (`Hide Level`).
+- `Patchless` mode for running without patches.
+- `Throw on patch fail` for crashing on an unsuccessful patch.
+- Backports and a separate global backports toggle.
+- Disable `RemoteExecuteCommand`.
+- Disable redial / forced reconnects.
+- Skip the privacy policy check on connect.
 
-#### Privacy and account controls
-- Multi-account support.
-- Guest mode with custom guest username.
-- Disable auto-login to last account.
-- HWID override/bind/random generation + HWID auto-delete.
-- HWID send opt-out (`HWID2 opt-out`).
-- flYi forcer
-- Disable Discord RPC.
-- Fake RPC username.
-- Local launcher-side username override (does not change in-game account name).
+#### Accounts and privacy
+- Multi-account.
+- Guest mode with a separate guest username.
+- Disable auto-login into the last account.
+- Change the selected account name in the launcher and the name passed to the client on launch.
+- Bind HWID to an account, manually override HWID, generate a random HWID.
+- Auto-delete HWID before launch.
+- `HWID2 opt-out` to refuse sending HWID to the server.
+- `flYi` / forced user id for HWID logic.
+- Disable Discord Rich Presence.
+- Override the name shown in Discord Rich Presence.
 
-#### UI and customization
-- Launcher localization (including RU/EN).
-- Built-in themes + Custom theme mode.
-- Custom color controls (background/accent/text/popup/gradient).
-- Import/export custom theme as `.json`.
-- Gradient and decorative background toggles.
-- Built-in font selection + custom `.ttf/.otf` font loading.
-- Server list column toggles (time/players/map/mode/ping).
-- Randomized window titles/header images/connection messages.
+#### Proxy
+- Built-in `Proxy` tab with SOCKS5 profiles.
+- Save, select, and edit multiple proxy profiles.
+- Proxy check: RTT, TCP connect, and UDP test.
+- Proxy for the launcher itself.
+- Proxy for launcher updates and GitHub requests.
+- Proxy for the loader through `ALL_PROXY` / `HTTP_PROXY` / `HTTPS_PROXY`.
+- Bypass regional restrictions for Robust build downloads.
+- Proxy game UDP through `SS14.ProxyService` and SOCKS5 UDP relay.
+- Block game launch if the proxy test fails.
+- Debug mode for `SS14.ProxyService`.
 
-#### Logging and debugging
-- Separate logging toggles: client/launcher/verbose/patcher/trace/debug.
-- Separate patcher log file (`client.marsey.log`).
-- Open log directory from UI.
-- CVar dump.
-- Resource dump mode + quick open for dump directory.
+#### Interface and customization
+- RU/EN and other interface localizations.
+- Built-in themes and `Custom Theme`.
+- Configure background, accent, text, popup, and gradient colors.
+- Import and export a custom theme as `.json`.
+- Separate toggles for gradient and decorative background.
+- Select a built-in font and connect your own `.ttf` / `.otf`.
+- Configure columns in the server list: round time, players, map, mode, ping.
+- Randomize the window title, header, and connect messages.
 
-#### Launcher updates
-- Built-in launcher update tab.
-- Custom GitHub repository source.
-- `Release / Pre-Release / All` filtering.
-- Install selected version from list.
-- Auto-update and update notifications.
+#### Resources, engines, and updates
+- Resource pack support with load order and quick enable/disable.
+- Support for custom engines from a folder or `.zip`.
+- Select a custom engine directly in the launcher.
+- Built-in launcher updates section.
+- Choose the GitHub repository used for updates.
+- `Release / Pre-release / All` filter.
+- Install the selected version from the list.
+- Auto-update and notifications about new versions.
 
-### Quick build
+#### Logs and debugging
+- Separate logs: client, launcher, verbose, patcher, trace, debug.
+- Separate patcher log (`client.marsey.log`).
+- Open the logs folder from the UI.
+- Dump resources/assets through `Resource Dumper`.
+- Open the dump folder from the UI.
+- Clear downloaded engines and server content from settings.
+
+### Build
 1. Install `.NET 10 SDK`.
 2. Clone with submodules:
    `git clone --recurse-submodules https://github.com/MusyaCliento/MusyaLoader.git`
 3. Build:
-   `python publish.py windows --x64-only` for windows
+   `python publish.py windows --x64-only` for Windows
 
-   `python publish.py linux --x64-only` for linux
+   `python publish.py linux --x64-only` for Linux
 
-   `python publish.py osx` for MacOS
-4. Unzip from `MusyaLoader_YourOS.zip` and run.
-
-### Resource Packs: documentation
-
-#### Where to place packs
-Use:
-`Marsey/ResourcePacks/<PackName>`
-
-#### Minimal pack structure
-```text
-Marsey/
-  ResourcePacks/
-    MyPack/
-      meta.json
-      icon.png                (optional)
-      Resources/
-        Textures/
-        Locale/
-```
-
-#### Required root `meta.json`
-Each pack must have `meta.json` in the pack root, otherwise it will not load.
-
-Example:
-```json
-{
-  "name": "My Pack",
-  "description": "My custom textures and locale",
-  "target": ""
-}
-```
-
-Fields:
-- `name` - required.
-- `description` - recommended.
-- `target` - fork id (empty means not tied to a specific fork).
-
-#### `.rsi` rule (IMPORTANT)
-If you override textures inside an `.rsi` directory, keep a valid `.rsi/meta.json` next to the changed textures.
-
-Example:
-```text
-Resources/
-  Textures/
-    Mobs/
-      Ghosts/
-        ghost_human.rsi/
-          meta.json
-          icon.png
-          animated.png
-          inhand-left.png
-          inhand-right.png
-```
-
-Without `.rsi/meta.json`, sprite states/metadata may be invalid and overrides can fail or behave incorrectly.
-
-#### How overrides are resolved
-- Overrides are matched by relative path inside `Resources/`.
-- Pack-root `meta.json` and `icon.png` are treated as pack metadata.
-- Localization overrides can be provided via `Resources/Locale/<locale>/...` `.ftl` files.
-
-
-### Custom Engine: documentation
-This feature already exists in the launcher Debug build, but here it is a bit more convenient.
-
-#### Where to place
-Engines live in:
-`Marsey/Engines/<PackName>`
-
-#### Example structure
-```text
-Marsey/
-  Engines/
-    Client/
-      engine.json
-      icon.png                (optional)
-      Robust.Client           (engine files)
-      Robust.Shared           (engine files)
-      ...
-      Resources/              (engine resources)
-```
-
-#### Required root `engine.json`
-`engine.json` in the engine root is required, otherwise the engine will not be picked up.
-
-Example:
-```json
-{
-  "name": "Custom Engine",
-  "description": "My custom engine",
-  "icon": "icon.png"
-}
-```
-
-Fields:
-- `name` - required.
-- `description` - recommended.
-- `icon` - build icon, optional.
-
-#### How to build an engine (example)
-`dotnet publish Robust.Client/Robust.Client.csproj -c Release -r win-x64 -p:FullRelease=True -p:TargetOS=Windows`
+   `python publish.py osx` for macOS
+4. Take `MusyaLoader_<OS>.zip`, extract it, and run it.
