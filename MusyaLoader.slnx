@@ -30,8 +30,8 @@
     <Platform Solution="*|x64" Project="?" />
     <Platform Solution="*|x86" Project="?" />
     <Platform Solution="Release|Any CPU" Project="?" />
-    <Build Solution="*|x64" Project="false" />
     <Build Solution="*|x86" Project="false" />
+    <Build Solution="Debug|x64" Project="false" />
     <Build Solution="Release|Any CPU" Project="false" />
   </Project>
   <Project Path="Marsey/Marsey.csproj">
@@ -41,8 +41,8 @@
     <Platform Solution="*|x64" Project="?" />
     <Platform Solution="*|x86" Project="?" />
     <Platform Solution="Release|Any CPU" Project="?" />
-    <Build Solution="*|x64" Project="false" />
     <Build Solution="*|x86" Project="false" />
+    <Build Solution="Debug|x64" Project="false" />
     <Build Solution="Release|Any CPU" Project="false" />
   </Project>
   <Project Path="Robust.LoaderApi/Robust.LoaderApi/Robust.LoaderApi.csproj" />
