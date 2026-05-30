@@ -702,6 +702,8 @@ public partial class Connector : ReactiveObject
         startInfo.EnvironmentVariables["SS14_DISABLE_SIGNING"] = _cfg.GetCVar(CVars.DisableSigning) ? "true" : null;
         startInfo.EnvironmentVariables["DOTNET_MULTILEVEL_LOOKUP"] = "0";
         startInfo.EnvironmentVariables["MARSEY_JUMP_LOADER_DEBUG"] = MarseyConf.JumpLoaderDebug ? "true" : null;
+        if (launchInfo.OverlayZip != null)
+            startInfo.EnvironmentVariables["SS14_LOADER_OVERLAY_ZIP"] = launchInfo.OverlayZip;
 
         ConfigureProxyEnvironment(startInfo);
     }
