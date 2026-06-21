@@ -163,22 +163,22 @@ public partial class Connector : ReactiveObject
         Log.Warning("========== SERVER CONNECT START: {Address} ==========", address);
         Status = ConnectionStatus.Connecting;
 
-    var (info, parsedAddr, infoAddr) = await GetServerInfoAsync(address, cancel);
+        var (info, parsedAddr, infoAddr) = await GetServerInfoAsync(address, cancel);
 
-    await HandlePrivacyPolicyAsync(info, cancel);
+        await HandlePrivacyPolicyAsync(info, cancel);
 
-    // Run update.
-    Status = ConnectionStatus.Updating;
+        // Run update.
+        Status = ConnectionStatus.Updating;
 
-    // Must have been set when retrieving build info (inferred to be automatic zipping).
-    Debug.Assert(info.BuildInformation != null, "info.BuildInformation != null");
+        // Must have been set when retrieving build info (inferred to be automatic zipping).
+        Debug.Assert(info.BuildInformation != null, "info.BuildInformation != null");
 
-    var installation = await RunUpdateAsync(info.BuildInformation, cancel);
+        var installation = await RunUpdateAsync(info.BuildInformation, cancel);
 
-    var connectAddress = GetConnectAddress(info, infoAddr);
-    connectAddress = TryStartUdpRelayIfNeeded(connectAddress);
+        var connectAddress = GetConnectAddress(info, infoAddr);
+        connectAddress = TryStartUdpRelayIfNeeded(connectAddress);
 
-    await LaunchClientWrap(installation, info, info.BuildInformation, connectAddress, parsedAddr, false, cancel);
+        await LaunchClientWrap(installation, info, info.BuildInformation, connectAddress, parsedAddr, false, cancel);
         Log.Warning("========== SERVER CONNECT END: {Address} ==========", address);
     }
 
@@ -422,7 +422,7 @@ public partial class Connector : ReactiveObject
         if (info != null && info.AuthInformation.Mode != AuthMode.Disabled && _loginManager.ActiveAccount != null
             // --- MARSEY PATCH BEGIN ---
             && _loginManager.ActiveAccount.Status != AccountLoginStatus.Guest)
-            // --- MARSEY PATCH END ---
+        // --- MARSEY PATCH END ---
         {
             var account = _loginManager.ActiveAccount;
 
@@ -598,7 +598,7 @@ public partial class Connector : ReactiveObject
         try
         {
             var info = await _http.GetFromJsonAsync<ServerInfo>(infoAddr, cancel) ?? throw new InvalidDataException();
-            if (info.BuildInformation is {} buildInfo && (buildInfo.Acz || string.IsNullOrEmpty(buildInfo.DownloadUrl)))
+            if (info.BuildInformation is { } buildInfo && (buildInfo.Acz || string.IsNullOrEmpty(buildInfo.DownloadUrl)))
             {
                 var acz = info.BuildInformation.Acz;
                 var apiAddress = UriHelper.GetServerApiAddress(parsedAddress);
@@ -801,6 +801,16 @@ public partial class Connector : ReactiveObject
 
         if (!independent)
         {
+            try
+            {
+                var currentPid = Process.GetCurrentProcess().Id;
+                foreach (var p in Process.GetProcessesByName("SS14.ProxyService"))
+                {
+                    p.Kill(true);
+                }
+            }
+            catch { }
+
             proxyServiceArgs.Add("--parent-pid");
             proxyServiceArgs.Add(Process.GetCurrentProcess().Id.ToString());
         }
@@ -1328,7 +1338,7 @@ public partial class Connector : ReactiveObject
                 var xattr = Process.Start(new ProcessStartInfo
                 {
                     FileName = "xattr",
-                    ArgumentList = {"-d", "com.apple.quarantine", appPath},
+                    ArgumentList = { "-d", "com.apple.quarantine", appPath },
                     RedirectStandardError = true,
                     RedirectStandardOutput = true
                 });
