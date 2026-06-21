@@ -64,7 +64,8 @@ public static class HappyEyeballsHttp
             AutomaticDecompression = DecompressionMethods.All,
             AllowAutoRedirect = autoRedirect,
             UseProxy = true,
-            Proxy = proxy
+            Proxy = proxy,
+            PooledConnectionLifetime = TimeSpan.FromMinutes(2)
         };
     }
 

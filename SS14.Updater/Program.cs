@@ -121,6 +121,18 @@ static void CopyTree(string sourceRoot, string targetRoot, HashSet<string> exclu
             continue;
         }
 
+        try
+        {
+            if (File.Exists(dest))
+                File.SetAttributes(dest, FileAttributes.Normal);
+
+            File.Copy(file, dest, true);
+        }
+        catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+        {
+            File.Copy(file, dest + ".pending", true);
+        }
+
         if (File.Exists(dest))
             File.SetAttributes(dest, FileAttributes.Normal);
 
