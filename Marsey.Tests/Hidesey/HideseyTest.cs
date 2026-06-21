@@ -21,6 +21,7 @@ public class HideseyTest
         harm = new Harmony(HarmonyID);
         HarmonyManager.Init(harm);
         Hidesey.Initialize();
+        Hidesey.HidePatch(typeof(Hidesey).Assembly);
     }
 
     [Test]
@@ -38,6 +39,7 @@ public class HideseyTest
         List<string> HiddenAssemblies = new List<string> { "Harmony", "Marsey", "MonoMod", "Mono." };
         
         Assembly[] foundForbidden = filteredAssemblies.Where(assembly => 
+            assembly != Assembly.GetExecutingAssembly() &&
             HiddenAssemblies.Any(forbidden => assembly.FullName != null && assembly.FullName.Contains(forbidden))
         ).ToArray();
 
@@ -54,6 +56,8 @@ public class HideseyTest
         {
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
+                if (assembly == Assembly.GetExecutingAssembly()) continue;
+
                 try
                 {
                     allTypes.AddRange(assembly.GetTypes());
