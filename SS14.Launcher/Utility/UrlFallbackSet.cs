@@ -83,15 +83,26 @@ public sealed class UrlFallbackSet
 
         while (true)
         {
-            var (response, index) = await HappyEyeballsHttp.ParallelTask(
-                Urls.Length,
-                (i, token) => AttemptConnection(httpClient, builder(Urls[i]), token),
-                AttemptDelay,
-                cancel).ConfigureAwait(false);
+            try
+            {
+                var (response, index) = await HappyEyeballsHttp.ParallelTask(
+                    Urls.Length,
+                    (i, token) => AttemptConnection(httpClient, builder(Urls[i]), token),
+                    AttemptDelay,
+                    cancel).ConfigureAwait(false);
 
-            Stats.AddSuccessfulRequest(index);
-            Log.Verbose("Successfully connected to {Url}", Urls[index]);
-            return response;
+                Stats.AddSuccessfulRequest(index);
+                Log.Verbose("Successfully connected to {Url}", Urls[index]);
+                return response;
+            }
+            catch (AggregateException e) when (!triedWithoutProxy && ShouldDisableProxyForSession(e))
+            {
+                triedWithoutProxy = true;
+                LauncherProxyRuntimeState.DisableLauncherProxyForSession = true;
+                LauncherProxyRuntimeState.DisableUpdateProxyForSession = true;
+                LauncherProxyRuntimeState.DisableBypassProxyForSession = true;
+                Log.Warning("Detected SOCKS auth mismatch. Launcher proxy is disabled for this session and request will be retried directly.");
+            }
         }
     }
 
@@ -167,7 +178,7 @@ public sealed class UrlFallbackSet
 
     public static UrlFallbackSet operator +(UrlFallbackSet set, string s)
     {
-        return new UrlFallbackSet([.. set.Urls.Select(x => x + s)], set.Stats);
+        return new UrlFallbackSet([..set.Urls.Select(x => x + s)], set.Stats);
     }
 
     public static UrlFallbackSet FromSingle(Uri url)

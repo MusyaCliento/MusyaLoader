@@ -232,10 +232,14 @@ public sealed class MainWindowViewModel : ViewModelBase, IErrorOverlayOwner
         if (!Socks5ProxyHelper.TryReadProxyValues(_cfg, out var proxyCfg, out var error))
             return;
 
-        using var startupProxyCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        using var startupProxyCts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
         var startupProxyProbe = await Socks5Probe.ProbeHandshakeAsync(proxyCfg, startupProxyCts.Token);
         if (startupProxyProbe.Ok)
             return;
+
+        LauncherProxyRuntimeState.DisableLauncherProxyForSession = true;
+        LauncherProxyRuntimeState.DisableUpdateProxyForSession = true;
+        LauncherProxyRuntimeState.DisableBypassProxyForSession = true;
 
         var message = _loc.GetString(
             "proxy-unavailable-message",

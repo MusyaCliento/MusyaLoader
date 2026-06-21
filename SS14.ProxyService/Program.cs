@@ -396,8 +396,6 @@ internal sealed class UdpSocksRelay
             var client = new TcpClient(address.AddressFamily);
             try
             {
-                client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
-
                 await client.ConnectAsync(address, port, cancel);
                 return client;
             }
@@ -768,30 +766,30 @@ internal sealed class UdpSocksRelay
         switch (atyp)
         {
             case 0x01:
-                {
-                    var ipv4 = new byte[4];
-                    await ReadExact(stream, ipv4, cancel);
-                    return new IPAddress(ipv4);
-                }
+            {
+                var ipv4 = new byte[4];
+                await ReadExact(stream, ipv4, cancel);
+                return new IPAddress(ipv4);
+            }
             case 0x04:
-                {
-                    var ipv6 = new byte[16];
-                    await ReadExact(stream, ipv6, cancel);
-                    return new IPAddress(ipv6);
-                }
+            {
+                var ipv6 = new byte[16];
+                await ReadExact(stream, ipv6, cancel);
+                return new IPAddress(ipv6);
+            }
             case 0x03:
-                {
-                    var lenBuf = new byte[1];
-                    await ReadExact(stream, lenBuf, cancel);
-                    var hostBuf = new byte[lenBuf[0]];
-                    await ReadExact(stream, hostBuf, cancel);
-                    var host = Encoding.ASCII.GetString(hostBuf);
-                    if (IPAddress.TryParse(host, out var ip))
-                        return ip;
+            {
+                var lenBuf = new byte[1];
+                await ReadExact(stream, lenBuf, cancel);
+                var hostBuf = new byte[lenBuf[0]];
+                await ReadExact(stream, hostBuf, cancel);
+                var host = Encoding.ASCII.GetString(hostBuf);
+                if (IPAddress.TryParse(host, out var ip))
+                    return ip;
 
-                    var addresses = await Dns.GetHostAddressesAsync(host, cancel);
-                    return addresses.FirstOrDefault() ?? IPAddress.Any;
-                }
+                var addresses = await Dns.GetHostAddressesAsync(host, cancel);
+                return addresses.FirstOrDefault() ?? IPAddress.Any;
+            }
             default:
                 throw new InvalidOperationException($"Unsupported SOCKS address type: {atyp}");
         }
