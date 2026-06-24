@@ -414,6 +414,17 @@ public static class AppThemeManager
     private static bool TryApplyFont(Application app, string descriptor, out Exception? error)
     {
         error = null;
+
+        if (Uri.TryCreate(descriptor, UriKind.Absolute, out var uri) && uri.IsFile)
+        {
+            var path = uri.LocalPath;
+            if (!string.IsNullOrWhiteSpace(path) && !File.Exists(path))
+            {
+                error = new FileNotFoundException("Font file not found.", path);
+                return false;
+            }
+        }
+
         try
         {
             var family = new FontFamily(descriptor);
