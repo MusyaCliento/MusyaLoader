@@ -1,4 +1,4 @@
-﻿using System.IO.Pipes;
+using System.IO.Pipes;
 using System.Text;
 using Marsey.Misc;
 
@@ -17,20 +17,15 @@ public class Server
             {
                 MarseyLogger.Log(MarseyLogger.LogType.INFO, "IPC-SERVER", $"Opening {name} (attempt {attempt}/{maxAttempts})");
 
-                await using NamedPipeServerStream pipeServer = new NamedPipeServerStream(
+                var pipeServer = new NamedPipeServerStream(
                     name,
                     PipeDirection.Out,
                     NamedPipeServerStream.MaxAllowedServerInstances,
                     PipeTransmissionMode.Byte,
                     PipeOptions.Asynchronous);
 
-                await pipeServer.WaitForConnectionAsync();
-
-                byte[] buffer = Encoding.UTF8.GetBytes(data);
-                await pipeServer.WriteAsync(buffer);
-
-                MarseyLogger.Log(MarseyLogger.LogType.INFO, "IPC-SERVER", $"Closing {name}");
-                pipeServer.Close();
+                var wait = pipeServer.WaitForConnectionAsync();
+                _ = SendWhenConnected(pipeServer, wait, name, data);
                 return;
             }
             catch (IOException ex) when (attempt < maxAttempts)
@@ -41,5 +36,24 @@ public class Server
         }
 
         MarseyLogger.Log(MarseyLogger.LogType.ERRO, "IPC-SERVER", $"Failed to open pipe {name}: all attempts exhausted.");
+    }
+
+    private static async Task SendWhenConnected(NamedPipeServerStream pipeServer, Task wait, string name, string data)
+    {
+        try
+        {
+            await wait;
+            byte[] buffer = Encoding.UTF8.GetBytes(data);
+            await pipeServer.WriteAsync(buffer);
+            MarseyLogger.Log(MarseyLogger.LogType.INFO, "IPC-SERVER", $"Closing {name}");
+        }
+        catch (Exception ex)
+        {
+            MarseyLogger.Log(MarseyLogger.LogType.ERRO, "IPC-SERVER", $"Failed to send {name}: {ex.Message}");
+        }
+        finally
+        {
+            await pipeServer.DisposeAsync();
+        }
     }
 }

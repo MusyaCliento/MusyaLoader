@@ -12,7 +12,7 @@ public class Client
 
         try
         {
-            pipeClient.Connect(150); // Pipe should connect immediately
+            pipeClient.Connect(2000);
         }
         catch(TimeoutException)
         {

@@ -650,16 +650,14 @@ public partial class Connector : ReactiveObject
             return null;
         }
 
-        // Prepare IPC pipes for Marsey without blocking process start.
-        // Pipes must be opened before/around launch, but awaiting here deadlocks
-        // because the loader is the one that connects to them.
-        _ = Marsify().ContinueWith(t =>
+        try
         {
-            if (t.Exception != null)
-            {
-                Log.Error(t.Exception, "Marsey IPC preparation failed");
-            }
-        }, TaskScheduler.Default);
+            await Marsify();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Marsey IPC preparation failed");
+        }
 
         ConfigureEnvironmentVariables(startInfo, launchInfo, engineVersion);
         ConfigureLogging(startInfo);
