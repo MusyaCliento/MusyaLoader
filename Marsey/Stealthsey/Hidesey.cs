@@ -854,7 +854,7 @@ public static partial class Hidesey
             var declType = method?.DeclaringType;
             if (declType == null) continue;
 
-            var asmName = declType.Assembly?.GetName().Name ?? "";
+            var asmName = method?.Module?.Assembly?.GetName().Name ?? "";
             if (asmName.Contains("Harmony") || asmName.Contains("MonoMod") || asmName.Contains("Mono.Cecil"))
                 return true;
 
@@ -978,7 +978,7 @@ public static partial class Hidesey
             foreach (var frame in frames)
             {
                 MethodBase? method = frame.GetMethod();
-                Assembly? asm = method?.DeclaringType?.Assembly;
+                Assembly? asm = method?.Module?.Assembly;
                 if (asm == null) continue;
 
                 if (asm.IsDynamic) continue;
