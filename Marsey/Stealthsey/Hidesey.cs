@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.Loader;
@@ -32,6 +33,8 @@ public static partial class Hidesey
     private static bool _initialized;
     private static bool _caching;
     [ThreadStatic] private static bool _inFromHidden;
+    [ThreadStatic] private static bool _inLyingTypeAssembly;
+    [ThreadStatic] internal static bool InInternalInspection;
 
     // Fast-path cache for FromHidden: assemblies known to be engine/system, skip stack walk on these
     private static readonly HashSet<Assembly> _knownEngineAsms = new();
@@ -46,6 +49,11 @@ public static partial class Hidesey
         "Anonymously Hosted DynamicMethods Assembly",
         "HarmonySharedState",
     };
+
+    // Cache for sanitized stack trace strings to avoid repeated split/allocations
+    private static readonly ConcurrentDictionary<string, string> _stackTraceCache = new();
+    private const int MaxStackTraceCacheSize = 512;
+    private static Assembly? _cachedRobustClientAsm;
 
     public static void Initialize()
     {
@@ -131,6 +139,7 @@ public static partial class Hidesey
     {
         Facade.Cloak(marsey);
         _hideseys.Add(marsey);
+        ClearStackTraceCache();
     }
 
     [HideLevelRequirement(HideLevel.Normal)]
@@ -234,6 +243,12 @@ public static partial class Hidesey
 
         // Closes Environment.StackTrace leak (whitelisted string property).
         PerjurizeStackTrace();
+
+        // Closes Exception.StackTrace leak.
+        PerjurizeExceptionStackTrace();
+
+        // Closes Type.Assembly (GetType().Assembly) leak.
+        PerjurizeTypeAssembly();
     }
 
     private static void PerjurizeTryLooseGetType()
@@ -404,6 +419,90 @@ public static partial class Hidesey
         catch (Exception ex)
         {
             MarseyLogger.Log(MarseyLogger.LogType.FATL, $"Environment.StackTrace hook FAILED: {ex.Message}");
+        }
+    }
+
+    private static void PerjurizeExceptionStackTrace()
+    {
+        MethodInfo? postfix = typeof(HideseyPatches).GetMethod(nameof(HideseyPatches.LieExceptionStackTrace),
+            BindingFlags.Public | BindingFlags.Static);
+        if (postfix == null)
+        {
+            MarseyLogger.Log(MarseyLogger.LogType.WARN, "HideseyPatches.LieExceptionStackTrace not found");
+            return;
+        }
+
+        MethodInfo? target = typeof(Exception).GetProperty("StackTrace")?.GetGetMethod();
+        if (target == null)
+        {
+            MarseyLogger.Log(MarseyLogger.LogType.WARN, "Exception.StackTrace getter not found");
+            return;
+        }
+
+        try
+        {
+            var harm = HarmonyManager.GetHarmony();
+            var hm = new HarmonyMethod(postfix)
+            {
+                before = Array.Empty<string>(),
+                after = Array.Empty<string>(),
+                priority = Priority.Normal,
+            };
+            harm.Patch(target, postfix: hm);
+            MarseyLogger.Log(MarseyLogger.LogType.INFO, "Exception.StackTrace hook installed");
+        }
+        catch (Exception ex)
+        {
+            MarseyLogger.Log(MarseyLogger.LogType.FATL, $"Exception.StackTrace hook FAILED: {ex.Message}");
+        }
+    }
+
+
+    private static void PerjurizeTypeAssembly()
+    {
+        MethodInfo? postfix = typeof(HideseyPatches).GetMethod(nameof(HideseyPatches.LieTypeAssembly),
+            BindingFlags.Public | BindingFlags.Static);
+        if (postfix == null)
+        {
+            MarseyLogger.Log(MarseyLogger.LogType.WARN, "HideseyPatches.LieTypeAssembly not found");
+            return;
+        }
+
+        var targets = new List<MethodInfo>();
+        var baseGetter = typeof(Type).GetProperty("Assembly")?.GetGetMethod();
+        if (baseGetter != null && !baseGetter.IsAbstract) targets.Add(baseGetter);
+
+        var runtimeType = typeof(object).GetType();
+        var runtimeGetter = runtimeType.GetProperty("Assembly", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)?.GetGetMethod()
+            ?? runtimeType.GetProperty("Assembly")?.GetGetMethod();
+        if (runtimeGetter != null && !runtimeGetter.IsAbstract && !targets.Contains(runtimeGetter))
+            targets.Add(runtimeGetter);
+
+        var harm = HarmonyManager.GetHarmony();
+        int hooked = 0;
+        foreach (var target in targets)
+        {
+            try
+            {
+                var hm = new HarmonyMethod(postfix)
+                {
+                    before = Array.Empty<string>(),
+                    after = Array.Empty<string>(),
+                    priority = Priority.Normal,
+                };
+                harm.Patch(target, postfix: hm);
+                MarseyLogger.Log(MarseyLogger.LogType.INFO, $"{target.DeclaringType?.Name}.Assembly hook installed");
+                hooked++;
+            }
+            catch (Exception ex)
+            {
+                MarseyLogger.Log(MarseyLogger.LogType.WARN, $"Assembly hook on {target.DeclaringType?.Name} failed: {ex.Message}");
+            }
+        }
+
+        if (hooked == 0)
+        {
+            MarseyLogger.Log(MarseyLogger.LogType.FATL, "PerjurizeTypeAssembly: no Type.Assembly targets hooked");
         }
     }
 
@@ -701,22 +800,110 @@ public static partial class Hidesey
     /// Delegates the per-line decision to Hidesey.StackLineMentionsHidden (see HideseyRegistries),
     /// which sources hidden names dynamically from the hidden-assembly list + infra keywords +
     /// dynamic Harmony asm names + manifest StackNames.
+    /// Uses thread-safe cache to avoid repeated split and string allocations.
     /// </summary>
     public static string LyingStackTrace(string original)
     {
         if (FromHidden()) return original;
         if (string.IsNullOrEmpty(original)) return original;
 
+        if (_stackTraceCache.TryGetValue(original, out var cached))
+            return cached;
+
         var sb = new System.Text.StringBuilder(original.Length);
         bool hadAny = false;
+        bool removedAny = false;
         foreach (var line in original.Split('\n'))
         {
-            if (StackLineMentionsHidden(line)) continue;
+            if (StackLineMentionsHidden(line))
+            {
+                removedAny = true;
+                continue;
+            }
             if (hadAny) sb.Append('\n');
             sb.Append(line);
             hadAny = true;
         }
-        return sb.ToString();
+
+        if (!removedAny)
+            return original;
+
+        var result = sb.ToString();
+        if (_stackTraceCache.Count < MaxStackTraceCacheSize)
+        {
+            _stackTraceCache.TryAdd(original, result);
+        }
+
+        return result;
+    }
+
+    public static void ClearStackTraceCache() => _stackTraceCache.Clear();
+
+
+    private static bool IsInternalReflectionCaller()
+    {
+        if (IsEngineViewForced()) return false;
+
+        var trace = new StackTrace(2, false);
+        var frames = trace.GetFrames();
+        if (frames == null) return false;
+
+        for (int i = 0; i < Math.Min(10, frames.Length); i++)
+        {
+            var method = frames[i].GetMethod();
+            var declType = method?.DeclaringType;
+            if (declType == null) continue;
+
+            var asmName = method?.Module?.Assembly?.GetName().Name ?? "";
+            if (asmName.Contains("Harmony") || asmName.Contains("MonoMod") || asmName.Contains("Mono.Cecil"))
+                return true;
+
+            if (declType.FullName != null &&
+                (declType.FullName.StartsWith("System.Reflection.") ||
+                 declType.FullName.StartsWith("System.RuntimeMethodHandle") ||
+                 declType.FullName.StartsWith("System.RuntimeType")))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Filter for Type.Assembly getter — returns a legitimate surrogate (Robust.Client) for hidden types.
+    /// </summary>
+    public static Assembly LyingTypeAssembly(Assembly original, Type instance)
+    {
+        if (_inLyingTypeAssembly) return original;
+        if (InInternalInspection) return original;
+        if (FromHidden()) return original;
+
+        _inLyingTypeAssembly = true;
+        try
+        {
+            if (IsInternalReflectionCaller())
+                return original;
+
+            if (IsHiddenAsm(original) || IsHiddenType(instance))
+            {
+                if (_cachedRobustClientAsm == null || _cachedRobustClientAsm.IsDynamic)
+                {
+                    _cachedRobustClientAsm = AppDomain.CurrentDomain.GetAssemblies()
+                        .FirstOrDefault(a => a.GetName().Name == "Robust.Client" && !a.IsDynamic);
+                }
+                if (_cachedRobustClientAsm != null)
+                    return _cachedRobustClientAsm;
+
+                return typeof(object).Assembly;
+            }
+
+            return original;
+        }
+        finally
+        {
+            _inLyingTypeAssembly = false;
+        }
     }
 
     /// <summary>
@@ -791,7 +978,7 @@ public static partial class Hidesey
             foreach (var frame in frames)
             {
                 MethodBase? method = frame.GetMethod();
-                Assembly? asm = method?.DeclaringType?.Assembly;
+                Assembly? asm = method?.Module?.Assembly;
                 if (asm == null) continue;
 
                 if (asm.IsDynamic) continue;

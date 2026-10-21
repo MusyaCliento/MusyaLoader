@@ -54,6 +54,16 @@ public static partial class HideseyPatches
     public static string? LastContentFindFilesCaller { get; private set; }
     public static List<string> ContentFindFilesBlockedNames { get; } = new();
 
+    /// <summary>
+    /// Diagnostic: Exception.StackTrace filter count.
+    /// </summary>
+    public static int ExceptionStackTraceFilteredCount { get; internal set; }
+
+    /// <summary>
+    /// Diagnostic: Type.Assembly spoof count.
+    /// </summary>
+    public static int TypeAssemblySpoofedCount { get; internal set; }
+
     public static void Lie<T>(ref T __result)
     {
         __result = __result switch
@@ -90,9 +100,9 @@ public static partial class HideseyPatches
 
         if (originalResult != null && __result == null && __args.Length > 0 && __args[0] is string probe)
         {
+            TypeGetTypeBlockedCount++;
             try
             {
-                TypeGetTypeBlockedCount++;
                 LastBlockedTypeGetTypeProbe = probe;
                 LastBlockedTypeGetTypeCaller = FindFirstBusinessCaller();
                 if (BlockedTypeGetTypeProbes.Count < 100)
@@ -125,9 +135,9 @@ public static partial class HideseyPatches
                 __1 = null;
                 __result = false;
 
+                TypeGetTypeBlockedCount++;
                 try
                 {
-                    TypeGetTypeBlockedCount++;
                     LastBlockedTypeGetTypeProbe = __0 ?? "?";
                     LastBlockedTypeGetTypeCaller = FindFirstBusinessCaller();
                     if (BlockedTypeGetTypeProbes.Count < 100)
@@ -150,9 +160,9 @@ public static partial class HideseyPatches
 
         if (!ReferenceEquals(originalResult, __result))
         {
+            LocationBlockedCount++;
             try
             {
-                LocationBlockedCount++;
                 LastBlockedLocationCaller = FindFirstBusinessCaller();
                 if (BlockedLocationProbes.Count < 100)
                 {
@@ -177,12 +187,46 @@ public static partial class HideseyPatches
 
         if (!ReferenceEquals(original, __result) && original != __result)
         {
+            StackTraceFilteredCount++;
             try
             {
-                StackTraceFilteredCount++;
                 LastFilteredStackTraceCaller = FindFirstBusinessCaller();
             }
             catch { }
+        }
+    }
+
+    /// <summary>
+    /// Postfix on Exception.StackTrace getter.
+    /// Filters out lines that reference hidden assemblies or patches.
+    /// </summary>
+    public static void LieExceptionStackTrace(ref string? __result)
+    {
+        if (string.IsNullOrEmpty(__result)) return;
+
+        var original = __result;
+        __result = Hidesey.LyingStackTrace(__result);
+
+        if (!ReferenceEquals(original, __result) && original != __result)
+        {
+            ExceptionStackTraceFilteredCount++;
+        }
+    }
+
+    /// <summary>
+    /// Postfix on Type.Assembly getter.
+    /// Returns surrogate assembly (e.g. Robust.Client) if type is hidden.
+    /// </summary>
+    public static void LieTypeAssembly(ref Assembly __result, Type __instance)
+    {
+        if (__result == null || __instance == null) return;
+
+        var original = __result;
+        __result = Hidesey.LyingTypeAssembly(__result, __instance);
+
+        if (!ReferenceEquals(original, __result))
+        {
+            TypeAssemblySpoofedCount++;
         }
     }
 

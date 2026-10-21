@@ -87,6 +87,7 @@ public static partial class Hidesey
             MergeInto(_stackHiddenExtra, manifest.StackNames);
 
             _anyHiddenTypeNames = _hiddenSystems.Count > 0 || _hiddenComps.Count > 0 || _hiddenIoc.Count > 0;
+            ClearStackTraceCache();
         }
 
         MarseyLogger.Log(MarseyLogger.LogType.DEBG,
@@ -146,29 +147,38 @@ public static partial class Hidesey
     public static bool IsHiddenType(Type t)
     {
         if (t == null) return false;
-        if (IsHiddenAsm(t.Assembly)) return true;        // whole-assembly hiding (existing semantics)
-        if (!_anyHiddenTypeNames) return false;          // lock-free fast path: nothing registered
-
-        var fn = t.FullName;
-        if (fn == null) return false;
-
-        bool inComps, inOther;
-        lock (_hideRegLock)
+        var prev = Hidesey.InInternalInspection;
+        Hidesey.InInternalInspection = true;
+        try
         {
-            inOther = _hiddenSystems.Contains(fn) || _hiddenIoc.Contains(fn);
-            inComps = !inOther && _hiddenComps.Contains(fn);
+            if (IsHiddenAsm(t.Assembly)) return true;        // whole-assembly hiding (existing semantics)
+            if (!_anyHiddenTypeNames) return false;          // lock-free fast path: nothing registered
+
+            var fn = t.FullName;
+            if (fn == null) return false;
+
+            bool inComps, inOther;
+            lock (_hideRegLock)
+            {
+                inOther = _hiddenSystems.Contains(fn) || _hiddenIoc.Contains(fn);
+                inComps = !inOther && _hiddenComps.Contains(fn);
+            }
+
+            if (inOther) return true;
+            if (!inComps) return false;
+
+            // Component category — networked guard (reflection + logging done outside the lock).
+            if (IsNetworkedComponent(t))
+            {
+                WarnNetworkedRefusal(fn);
+                return false;                                // leave VISIBLE — hiding would break net hash
+            }
+            return true;
         }
-
-        if (inOther) return true;
-        if (!inComps) return false;
-
-        // Component category — networked guard (reflection + logging done outside the lock).
-        if (IsNetworkedComponent(t))
+        finally
         {
-            WarnNetworkedRefusal(fn);
-            return false;                                // leave VISIBLE — hiding would break net hash
+            Hidesey.InInternalInspection = prev;
         }
-        return true;
     }
 
     /// <summary>
@@ -198,7 +208,7 @@ public static partial class Hidesey
         {
             bool hidden;
             lock (_hideRegLock) hidden = name != null && _hiddenCvars.Contains(name);
-            if (!hidden) result.Add(name);
+            if (!hidden && name != null) result.Add(name);
         }
         return result;
     }
