@@ -77,6 +77,8 @@
     <EmbeddedResource Include="Utility\runtime.json">
       <LogicalName>Utility.runtime.json</LogicalName>
     </EmbeddedResource>
+    <None Remove="Models\loading-messages.txt" />
+    <EmbeddedResource Include="Models\loading-messages.txt" />
     <None Remove="Models\Data\Migrations\*.sql" />
     <EmbeddedResource Include="Models\Data\Migrations\*.sql" />
     <None Remove="Models\ContentManagement\Migrations\*.sql" />

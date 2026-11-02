@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Serilog;
@@ -36,53 +37,14 @@ public sealed class LauncherInfoManager(HttpClient httpClient)
 
     private async Task LoadData()
     {
-        LauncherInfoModel? info;
         try
         {
             Log.Debug("Loading launcher info... {Url}", ConfigConstants.UrlLauncherInfo);
-            info = await ConfigConstants.UrlLauncherInfo.GetFromJsonAsync<LauncherInfoModel>(httpClient);
+            LauncherInfoModel? info = await ConfigConstants.UrlLauncherInfo.GetFromJsonAsync<LauncherInfoModel>(httpClient);
             if (info == null)
-            {
                 Log.Warning("Launcher info response was null.");
-                return;
-            }
-
-             string[] messagesEn = new string[]
-            {
-            "Meow! Siameses cat rule the station!",
-            "Copium delivery incoming...",
-            "Robust or be robusted!",
-            "Pet the catl for good luck!",
-            "Insert more catnip!",
-            "Skill issue detected!",
-            "The toolbox chooses the engineer.",
-            "Cargonia will rise again!",
-            "Don't forget to feed the corgi.",
-            "Assistant spotted with a crowbar.",
-            "Syndie? More like skill issue.",
-            "Clown stole my shoes again...",
-            "Atmos techs know true power.",
-            "Mothroaches are plotting something.",
-            "Copium levels critical!",
-            "Siameses are best cats, fact.",
-            "Just another shift gone wrong...",
-            "Honk!",
-            "The AI is definitely not rogue.",
-            "You hear scratching in the vents...",
-            "Siameses bring only chaos.",
-            "Space carp are overrated.",
-            "Toolbox meta never dies.",
-            "Meow meow robust crew!",
-            "Trust no mime.",
-            "More cats, less plasma fires.",
-            "Shuttle called due to cat nap time.",
-            "Warden's gun cabinet is empty...",
-            "Engineer forgot to turn on the SM.",
-            "Vents are for cats, not you.",
-            "Crew morale up thanks to cats!",
-            "Copium tank refilled successfully.",
-            "Robustness is a lifestyle."
-            };
+            else
+                _model = info;
         }
         catch (Exception e)
         {
@@ -90,14 +52,33 @@ public sealed class LauncherInfoManager(HttpClient httpClient)
                 Log.Warning("Loading launcher info failed due to proxy connectivity/authentication issue.");
             else
                 Log.Warning(e, "Loading launcher info failed");
-            return;
         }
 
-        // This is future-proofed to support multiple languages,
-        // but for now the launcher only supports English so it'll have to do.
-        info.Messages.TryGetValue("en-US", out _messages);
+        // Loading messages are local-only: they are shipped as an embedded resource
+        // instead of being pulled from the remote launcher info feed.
+        _messages = LoadLocalMessages();
+    }
 
-        _model = info;
+    private static string[] LoadLocalMessages()
+    {
+        const string resourceName = "SS14.Launcher.Models.loading-messages.txt";
+        using Stream? stream = typeof(LauncherInfoManager).Assembly.GetManifestResourceStream(resourceName);
+        if (stream == null)
+        {
+            Log.Warning("Local loading messages resource missing ({Resource}).", resourceName);
+            return [];
+        }
+
+        using var reader = new StreamReader(stream);
+        List<string> messages = [];
+        while (reader.ReadLine() is { } line)
+        {
+            string message = line.Trim();
+            if (message.Length > 0)
+                messages.Add(message);
+        }
+
+        return messages.Count > 0 ? [.. messages] : [];
     }
 
     public string? GetRandomMessage()
