@@ -96,8 +96,28 @@ public sealed class LauncherInfoManager(HttpClient httpClient)
         // This is future-proofed to support multiple languages,
         // but for now the launcher only supports English so it'll have to do.
         info.Messages.TryGetValue("en-US", out _messages);
+        _messages = FilterMessages(_messages);
 
         _model = info;
+    }
+
+    /// <summary>
+    /// Messages that the launcher data feed ships but that we do not want to show
+    /// in the random loading message rotation.
+    /// </summary>
+    private static readonly string[] BlockedMessages =
+    [
+        "Free Palestine"
+    ];
+
+    private static string[]? FilterMessages(string[]? messages)
+    {
+        if (messages == null)
+            return null;
+
+        return Array.FindAll(messages, message =>
+            !Array.Exists(BlockedMessages, blocked =>
+                message.Contains(blocked, StringComparison.OrdinalIgnoreCase)));
     }
 
     public string? GetRandomMessage()
